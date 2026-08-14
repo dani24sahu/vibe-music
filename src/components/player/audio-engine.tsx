@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { getSong } from "@/lib/api/music";
 import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useMediaSession } from "@/hooks/use-media-session";
 import { cacheSongMetadata } from "@/lib/offline/metadata-cache";
 import { isBrowserOnline } from "@/lib/offline/cache-policy";
 import {
@@ -32,6 +33,7 @@ export function AudioEngine() {
   const online = useOnlineStatus();
   const audioSource = resolveAudioSource(song, preferredQuality);
   const src = canPlayAudioSource(audioSource, online) ? audioSource.url : null;
+  useMediaSession();
 
   useEffect(() => {
     const audio = audioRef.current;

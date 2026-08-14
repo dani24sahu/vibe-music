@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   applicationName: "Vibe",
-  title: "Vibe — personal music player",
+  title: "Vibe | personal music player",
   description:
     "Local-development music player for searching and playing tracks through a personal Next.js adapter.",
   manifest: "/manifest.webmanifest",
