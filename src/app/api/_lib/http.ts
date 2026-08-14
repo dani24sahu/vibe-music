@@ -21,7 +21,7 @@ const NO_STORE_HEADERS = {
   "Netlify-Vary": "query",
 };
 
-export function jsonCacheHeaders(cacheSeconds: number) {
+export function jsonCacheHeaders(cacheSeconds: number): Record<string, string> {
   if (cacheSeconds <= 0) return { ...NO_STORE_HEADERS };
   return {
     "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 2}`,
