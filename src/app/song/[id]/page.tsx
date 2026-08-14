@@ -95,16 +95,17 @@ export default function SongPage() {
         </div>
         <div className="overflow-hidden rounded-[1.4rem] border border-border/60 bg-card/70">
           <SyncedLyrics
-            lyrics={lyricsForSong(lyrics.data, song.id)}
+            lyrics={lyricsForSong(lyrics.data, song.id, song.name)}
             currentTime={playing?.id === song.id ? currentTime : 0}
             onSeek={playing?.id === song.id ? seek : undefined}
             follow={playing?.id === song.id}
             tone="light"
             isLoading={
               lyrics.isPlaceholderData ||
-              (!lyricsForSong(lyrics.data, song.id) && (lyrics.isLoading || lyrics.isFetching))
+              (!lyricsForSong(lyrics.data, song.id, song.name) &&
+                (lyrics.isLoading || lyrics.isFetching))
             }
-            isError={lyrics.isError && !lyricsForSong(lyrics.data, song.id)}
+            isError={lyrics.isError && !lyricsForSong(lyrics.data, song.id, song.name)}
             onRetry={() => void lyrics.refetch()}
             className="max-h-[28rem] px-4"
           />

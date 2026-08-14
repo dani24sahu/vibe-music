@@ -87,7 +87,9 @@ export function NowPlayingScreen() {
       : null,
   );
   const currentLyrics =
-    lyrics.isPlaceholderData ? undefined : lyricsForSong(lyrics.data, song?.id);
+    lyrics.isPlaceholderData
+      ? undefined
+      : lyricsForSong(lyrics.data, song?.id, song?.name);
   const lyricsPending = Boolean(song) && !currentLyrics && (lyrics.isLoading || lyrics.isFetching);
 
   function dismiss() {

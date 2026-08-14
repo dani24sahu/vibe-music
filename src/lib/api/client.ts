@@ -13,6 +13,7 @@ export class MusicApiError extends Error {
 export async function apiGet<T>(
   path: string,
   query: Record<string, string | number | undefined> = {},
+  options?: { cache?: RequestCache },
 ): Promise<T> {
   const url = new URL(path, window.location.origin);
   for (const [key, value] of Object.entries(query)) {
@@ -22,7 +23,10 @@ export async function apiGet<T>(
 
   let response: Response;
   try {
-    response = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+    response = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+      cache: options?.cache,
+    });
   } catch {
     throw new MusicApiError(
       "Could not reach the local music API.",

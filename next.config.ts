@@ -16,6 +16,15 @@ const nextConfig: NextConfig = {
           { key: "Service-Worker-Allowed", value: "/" },
         ],
       },
+      {
+        source: "/api/lyrics",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store, no-cache, max-age=0, must-revalidate" },
+          { key: "CDN-Cache-Control", value: "no-store" },
+          { key: "Netlify-CDN-Cache-Control", value: "no-store" },
+          { key: "Netlify-Vary", value: "query" },
+        ],
+      },
     ];
   },
 };

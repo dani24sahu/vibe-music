@@ -1,12 +1,12 @@
 const DB_NAME = "vibe-offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export const IDB_STORES = {
   songs: "songs",
   albums: "albums",
   artists: "artists",
   playlists: "playlists",
-  lyrics: "lyrics",
+  lyrics: "lyrics-v2",
 } as const;
 
 export type IdbStoreName = (typeof IDB_STORES)[keyof typeof IDB_STORES];
@@ -28,6 +28,9 @@ function openDb(): Promise<IDBDatabase | null> {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
       request.onupgradeneeded = () => {
         const db = request.result;
+        if (db.objectStoreNames.contains("lyrics")) {
+          db.deleteObjectStore("lyrics");
+        }
         for (const store of Object.values(IDB_STORES)) {
           if (!db.objectStoreNames.contains(store)) {
             db.createObjectStore(store, { keyPath: "id" });

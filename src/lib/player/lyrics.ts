@@ -1,3 +1,4 @@
+import { titlesAreCompatible } from "@/lib/lyrics/title-match";
 import type { LyricLine, LyricsResult } from "@/types/lyrics";
 
 const TIMESTAMP = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
@@ -82,8 +83,20 @@ export function activeLyricText(lines: LyricLine[], currentTime: number) {
   return text || null;
 }
 
-export function lyricsForSong(lyrics: LyricsResult | undefined, songId: string | undefined) {
+export function lyricsForSong(
+  lyrics: LyricsResult | undefined,
+  songId: string | undefined,
+  songTitle?: string,
+) {
   if (!lyrics || !songId) return undefined;
   if (lyrics.songId && lyrics.songId !== songId) return undefined;
+  if (
+    lyrics.found &&
+    songTitle &&
+    lyrics.title &&
+    !titlesAreCompatible(songTitle, lyrics.title)
+  ) {
+    return undefined;
+  }
   return lyrics;
 }

@@ -14,14 +14,27 @@ function isCodedError(
   );
 }
 
+const NO_STORE_HEADERS = {
+  "Cache-Control": "private, no-store, no-cache, max-age=0, must-revalidate",
+  "CDN-Cache-Control": "no-store",
+  "Netlify-CDN-Cache-Control": "no-store",
+  "Netlify-Vary": "query",
+};
+
+export function jsonCacheHeaders(cacheSeconds: number) {
+  if (cacheSeconds <= 0) return { ...NO_STORE_HEADERS };
+  return {
+    "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 2}`,
+    "Netlify-Vary": "query",
+  };
+}
+
 export function jsonOk<T>(data: T, cacheSeconds = 120) {
   return NextResponse.json(
     { data },
     {
       status: 200,
-      headers: {
-        "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 2}`,
-      },
+      headers: jsonCacheHeaders(cacheSeconds),
     },
   );
 }
@@ -30,7 +43,7 @@ export function jsonError(error: unknown) {
   if (error instanceof SaavnError || error instanceof LyricsError || isCodedError(error)) {
     return NextResponse.json(
       { error: { message: error.message, code: error.code } },
-      { status: error.status },
+      { status: error.status, headers: NO_STORE_HEADERS },
     );
   }
 
@@ -41,7 +54,7 @@ export function jsonError(error: unknown) {
         code: "INTERNAL_ERROR",
       },
     },
-    { status: 500 },
+    { status: 500, headers: NO_STORE_HEADERS },
   );
 }
 

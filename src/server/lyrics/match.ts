@@ -1,3 +1,5 @@
+import { artistsAreCompatible, titlesAreCompatible } from "@/lib/lyrics/title-match";
+
 export type LrcLibRecord = {
   id: number;
   name?: string;
@@ -9,6 +11,30 @@ export type LrcLibRecord = {
   plainLyrics?: string | null;
   syncedLyrics?: string | null;
 };
+
+export type LyricsMatchQuery = {
+  title?: string;
+  artist?: string;
+  duration?: number;
+};
+
+export function recordTitle(record: LrcLibRecord) {
+  return record.trackName || record.name || "";
+}
+
+export function lyricsRecordMatchesQuery(record: LrcLibRecord, query: LyricsMatchQuery) {
+  if (query.title && !titlesAreCompatible(query.title, recordTitle(record), query.artist)) {
+    return false;
+  }
+  if (
+    query.artist &&
+    record.artistName &&
+    !artistsAreCompatible(query.artist, record.artistName)
+  ) {
+    return false;
+  }
+  return true;
+}
 
 export function scoreLyricsRecord(record: LrcLibRecord, duration?: number) {
   const hasSynced = Boolean(record.syncedLyrics?.trim());
@@ -31,11 +57,14 @@ export function scoreLyricsRecord(record: LrcLibRecord, duration?: number) {
 export function pickBestLyricsRecord(
   records: LrcLibRecord[],
   duration?: number,
+  query: LyricsMatchQuery = {},
 ): LrcLibRecord | null {
   let best: LrcLibRecord | null = null;
   let bestScore = -1;
+  const matchQuery = { ...query, duration: query.duration ?? duration };
   for (const record of records) {
-    const score = scoreLyricsRecord(record, duration);
+    if (!lyricsRecordMatchesQuery(record, matchQuery)) continue;
+    const score = scoreLyricsRecord(record, matchQuery.duration);
     if (score > bestScore) {
       best = record;
       bestScore = score;

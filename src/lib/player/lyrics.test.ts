@@ -61,6 +61,9 @@ describe("lrc parser", () => {
     expect(lyricsForSong({ ...lyrics, songId: undefined }, "song-b")?.title).toBe(
       "About You",
     );
+    expect(
+      lyricsForSong({ ...lyrics, title: "Apna Bana Le" }, "song-a", "Jaan Nisaar"),
+    ).toBeUndefined();
   });
 
   it("keeps unsynced lyrics as plain lines", () => {
@@ -90,6 +93,47 @@ describe("lyrics matching helpers", () => {
       144,
     );
     expect(best?.id).toBe(2);
+  });
+
+  it("does not pick a different song with similar duration", () => {
+    const best = pickBestLyricsRecord(
+      [
+        {
+          id: 1,
+          trackName: "Apna Bana Le",
+          artistName: "Arijit Singh",
+          duration: 238,
+          syncedLyrics: "[00:01.00] tu mera koi na",
+        },
+        {
+          id: 2,
+          trackName: "Jaan Nisaar",
+          artistName: "Arijit Singh",
+          duration: 238,
+          syncedLyrics: "[00:01.00] jaan nisaar",
+        },
+      ],
+      238,
+      { title: "Jaan Nisaar (Arijit)", artist: "Arijit Singh" },
+    );
+    expect(best?.id).toBe(2);
+  });
+
+  it("returns no lyrics when search results are a different track", () => {
+    const best = pickBestLyricsRecord(
+      [
+        {
+          id: 1,
+          trackName: "Apna Bana Le",
+          artistName: "Arijit Singh",
+          duration: 238,
+          syncedLyrics: "[00:01.00] tu mera koi na",
+        },
+      ],
+      238,
+      { title: "Jaan Nisaar (Arijit)", artist: "Arijit Singh" },
+    );
+    expect(best).toBeNull();
   });
 
   it("cleans catalog titles and featured artist lists", () => {

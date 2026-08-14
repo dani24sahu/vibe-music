@@ -10,6 +10,7 @@ import {
   getCachedPlaylist,
   getCachedSong,
 } from "@/lib/offline/metadata-cache";
+import { titlesAreCompatible } from "@/lib/lyrics/title-match";
 import {
   cacheLyrics,
   getCachedLyrics,
@@ -149,25 +150,50 @@ export function getPlaylist(id: string) {
 export async function getLyrics(query: LyricsQuery, songId?: string) {
   const cacheKey = songId?.trim() || `${query.title}|${query.artist}`.toLowerCase();
   const cached = await getCachedLyrics(cacheKey);
+  const cachedMatchesQuery = Boolean(
+    cached &&
+      (!cached.result.found ||
+        (cached.result.title &&
+          titlesAreCompatible(query.title, cached.result.title, query.artist))),
+  );
   if (
     cached &&
+    cachedMatchesQuery &&
     shouldReuseCachedLyrics(cached.cachedAt, cached.result.found, isBrowserOnline())
   ) {
     return { ...cached.result, songId: cacheKey };
   }
 
   try {
-    const result = await apiGet<LyricsResult>("/api/lyrics", {
-      title: query.title,
-      artist: query.artist,
-      album: query.album ?? undefined,
-      duration: query.duration ?? undefined,
-    });
-    const tagged = { ...result, songId: cacheKey };
+    const result = await apiGet<LyricsResult>(
+      "/api/lyrics",
+      {
+        title: query.title,
+        artist: query.artist,
+        album: query.album ?? undefined,
+        duration: query.duration ?? undefined,
+      },
+      { cache: "no-store" },
+    );
+    const matches =
+      !result.found ||
+      (result.title && titlesAreCompatible(query.title, result.title, query.artist));
+    const tagged = matches
+      ? { ...result, songId: cacheKey }
+      : {
+          found: false,
+          instrumental: false,
+          synced: false,
+          source: "lrclib" as const,
+          title: null,
+          artist: null,
+          lines: [],
+          songId: cacheKey,
+        };
     void cacheLyrics(cacheKey, tagged);
     return tagged;
   } catch (error) {
-    if (cached && shouldUseCacheFallback(error)) {
+    if (cached && cachedMatchesQuery && shouldUseCacheFallback(error)) {
       return { ...cached.result, songId: cacheKey };
     }
     if (!isBrowserOnline()) {

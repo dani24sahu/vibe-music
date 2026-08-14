@@ -1,5 +1,5 @@
 import { LyricsError } from "./errors";
-import { pickBestLyricsRecord, type LrcLibRecord } from "./match";
+import { lyricsRecordMatchesQuery, pickBestLyricsRecord, type LrcLibRecord } from "./match";
 import {
   cleanTrackTitle,
   firstArtistName,
@@ -145,6 +145,8 @@ export async function getLyrics(query: LyricsQuery): Promise<LyricsResult> {
   const album = query.album?.trim() || undefined;
   const duration = roundDuration(query.duration);
 
+  const matchQuery = { title: query.title, artist: query.artist, duration };
+
   for (const title of titles) {
     for (const artist of artists) {
       const exact = await getExact({
@@ -153,7 +155,7 @@ export async function getLyrics(query: LyricsQuery): Promise<LyricsResult> {
         album_name: album,
         duration,
       });
-      if (exact) {
+      if (exact && lyricsRecordMatchesQuery(exact, matchQuery)) {
         const mapped = mapRecord(exact);
         if (mapped.found) return mapped;
       }
@@ -165,6 +167,7 @@ export async function getLyrics(query: LyricsQuery): Promise<LyricsResult> {
       const best = pickBestLyricsRecord(
         await searchRecords({ track_name: title, artist_name: artist }),
         duration,
+        matchQuery,
       );
       if (best) {
         const mapped = mapRecord(best);
@@ -178,6 +181,7 @@ export async function getLyrics(query: LyricsQuery): Promise<LyricsResult> {
       q: `${titles[0] ?? query.title} ${artists[0] ?? query.artist}`.trim(),
     }),
     duration,
+    matchQuery,
   );
   if (fallback) {
     const mapped = mapRecord(fallback);

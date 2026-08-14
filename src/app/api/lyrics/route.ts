@@ -2,6 +2,7 @@ import { jsonError, jsonOk, optionalInt, requiredQuery } from "@/app/api/_lib/ht
 import { getLyrics } from "@/server/lyrics";
 
 export const maxDuration = 30;
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
       album: url.searchParams.get("album"),
       duration: optionalInt(url, "duration"),
     });
-    return jsonOk(data, data.found ? 3600 : 90);
+    return jsonOk(data, 0);
   } catch (error) {
     return jsonError(error);
   }
