@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { localLibrarySongs } from "@/lib/offline/local-library";
+import { cacheSongsMetadata } from "@/lib/offline/metadata-cache";
 import { useLibraryStore } from "@/stores/library-store";
 import { usePlayerStore } from "@/stores/player-store";
 
@@ -13,6 +15,7 @@ function makeQueryClient() {
       queries: {
         refetchOnWindowFocus: false,
         staleTime: 60_000,
+        networkMode: "always",
       },
     },
   });
@@ -35,6 +38,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
         if (!cancelled) {
           usePlayerStore.getState().setHydrated(true);
           useLibraryStore.getState().setHydrated(true);
+          void cacheSongsMetadata(localLibrarySongs());
         }
       }
     })();

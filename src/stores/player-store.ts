@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { streamUrl } from "@/lib/api/music";
-import { pickPlaybackSource } from "@/lib/player/quality";
+import { resolveAudioSource } from "@/lib/player/audio-source";
 import { createSafePersistStorage, persistedSongs } from "@/lib/persist-storage";
 import {
   cycleRepeat,
@@ -240,7 +239,5 @@ export function currentSong(state: PlayerState) {
 }
 
 export function currentStreamSrc(song: Song | null, preferredQuality?: string | null) {
-  if (!song) return null;
-  const source = pickPlaybackSource(song.playbackSources ?? [], preferredQuality);
-  return source?.url ? streamUrl(source.url) : null;
+  return resolveAudioSource(song, preferredQuality).url;
 }

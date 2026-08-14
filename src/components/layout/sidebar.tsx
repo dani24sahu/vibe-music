@@ -4,6 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Clock3, Heart, Home, ListMusic, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { possessiveName } from "@/lib/profile";
+import { MadeBy } from "@/components/layout/made-by";
+import { ProfileButton } from "@/components/profile/profile-button";
 import { useLibraryStore } from "@/stores/library-store";
 
 const nav = [
@@ -18,19 +21,25 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export function Sidebar() {
+export function Sidebar({ insetBottom = false }: { insetBottom?: boolean }) {
   const pathname = usePathname();
   const playlists = useLibraryStore((state) => state.playlists);
+  const displayName = useLibraryStore((state) => state.displayName);
 
   return (
-    <aside className="relative z-10 hidden h-dvh w-64 shrink-0 flex-col gap-6 overflow-hidden p-4 pb-32 lg:flex">
-      <div className="glass-panel flex h-full flex-col gap-6 overflow-y-auto rounded-[1.75rem] p-4">
+    <aside
+      className={cn(
+        "relative z-10 hidden h-full w-64 shrink-0 flex-col overflow-hidden p-4 lg:flex",
+        insetBottom ? "pb-[calc(var(--player-bar-h)+1.25rem)]" : "pb-4",
+      )}
+    >
+      <div className="glass-panel flex h-full min-h-0 flex-col gap-6 overflow-hidden rounded-[1.75rem] p-4">
         <Link href="/" className="px-2">
           <span className="font-display text-2xl font-bold tracking-tight text-gradient">
             vibe
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
-            play it loud
+            {displayName ? `hey ${displayName}` : "play it loud"}
           </span>
         </Link>
         <nav className="space-y-1">
@@ -52,9 +61,9 @@ export function Sidebar() {
             );
           })}
         </nav>
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <p className="font-display px-3 text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-            Your mixes
+            {displayName ? `${possessiveName(displayName)} mixes` : "Your mixes"}
           </p>
           <div className="mt-2 space-y-1">
             {playlists.length === 0 ? (
@@ -78,6 +87,10 @@ export function Sidebar() {
             )}
           </div>
         </div>
+        <div className="mt-auto shrink-0 space-y-3">
+          <ProfileButton showName className="w-full justify-start" />
+          <MadeBy />
+        </div>
       </div>
     </aside>
   );
@@ -87,7 +100,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
+    <nav className="pointer-events-auto w-full lg:hidden">
       <div className="glass-panel mx-auto flex max-w-lg items-center justify-around rounded-full px-2 py-1.5 shadow-xl">
         {nav.map((item) => {
           const active = isActive(pathname, item.href);

@@ -2,12 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { MadeBy } from "@/components/layout/made-by";
 import { MediaCard } from "@/components/media/media-card";
 import { SongRow } from "@/components/media/song-row";
 import { CardGridSkeleton, SongRowSkeleton } from "@/components/states/skeletons";
 import { EmptyState, ErrorState } from "@/components/states/status";
 import { usePlayback } from "@/hooks/use-playback";
 import { searchPlaylists, searchSongs } from "@/lib/api/music";
+import { greetingForNow } from "@/lib/profile";
 import { useLibraryStore } from "@/stores/library-store";
 
 const DISCOVER_SONGS_QUERY = "bollywood hits";
@@ -17,7 +19,9 @@ export default function HomePage() {
   const recentlyPlayed = useLibraryStore((state) => state.recentlyPlayed);
   const favorites = useLibraryStore((state) => state.favorites);
   const playlists = useLibraryStore((state) => state.playlists);
+  const displayName = useLibraryStore((state) => state.displayName);
   const { play } = usePlayback();
+  const greeting = greetingForNow();
 
   const discoverSongs = useQuery({
     queryKey: ["discover", "songs", DISCOVER_SONGS_QUERY],
@@ -36,13 +40,15 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-hot/10 to-transparent" />
         <div className="relative">
           <p className="text-xs font-semibold tracking-[0.22em] text-primary uppercase">
-            tonight's energy
+            {displayName ? `${greeting}, ${displayName}` : "tonight's energy"}
           </p>
           <h1 className="font-display mt-3 max-w-xl text-4xl leading-[0.95] font-bold tracking-tight sm:text-6xl">
             what’s the <span className="text-gradient">vibe</span>
           </h1>
           <p className="mt-4 max-w-md text-sm text-muted-foreground sm:text-base">
-            Search it. Queue it. Loop it. Your player, your night.
+            {displayName
+              ? `Search it. Queue it. Loop it. Your night, ${displayName}.`
+              : "Search it. Queue it. Loop it. Your player, your night."}
           </p>
           <Link
             href="/search"
@@ -104,7 +110,11 @@ export default function HomePage() {
         {discoverSongs.isLoading ? <SongRowSkeleton /> : null}
         {discoverSongs.isError ? (
           <ErrorState
-            description="Discover songs could not be loaded from the music service."
+            description={
+              discoverSongs.error instanceof Error
+                ? discoverSongs.error.message
+                : "Discover songs could not be loaded from the music service."
+            }
             onRetry={() => void discoverSongs.refetch()}
           />
         ) : null}
@@ -134,7 +144,11 @@ export default function HomePage() {
         {discoverPlaylists.isLoading ? <CardGridSkeleton /> : null}
         {discoverPlaylists.isError ? (
           <ErrorState
-            description="Playlists could not be loaded from the music service."
+            description={
+              discoverPlaylists.error instanceof Error
+                ? discoverPlaylists.error.message
+                : "Playlists could not be loaded from the music service."
+            }
             onRetry={() => void discoverPlaylists.refetch()}
           />
         ) : null}
@@ -152,6 +166,8 @@ export default function HomePage() {
           </div>
         ) : null}
       </section>
+
+      <MadeBy className="pt-4 lg:hidden" />
     </div>
   );
 }

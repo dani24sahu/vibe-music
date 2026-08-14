@@ -211,7 +211,9 @@ export function TopSearch() {
           ) : null}
           {search.isError ? (
             <p className="px-3 py-3 text-sm text-destructive">
-              Suggestions couldn’t be loaded.
+              {search.error instanceof Error
+                ? search.error.message
+                : "Suggestions couldn’t be loaded."}
             </p>
           ) : null}
           {!waiting && !search.isError && suggestions.length === 0 ? (

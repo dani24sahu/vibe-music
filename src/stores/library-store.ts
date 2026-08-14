@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createSafePersistStorage, persistedSongs } from "@/lib/persist-storage";
+import { displayNameFromStorage } from "@/lib/profile";
 import type { Song } from "@/types/music";
 
 export type LocalPlaylist = {
@@ -12,6 +13,7 @@ export type LocalPlaylist = {
 };
 
 type LibraryState = {
+  displayName: string | null;
   favorites: Song[];
   recentlyPlayed: Song[];
   playlists: LocalPlaylist[];
@@ -20,6 +22,7 @@ type LibraryState = {
 
 type LibraryActions = {
   setHydrated: (value: boolean) => void;
+  setDisplayName: (name: string) => void;
   toggleFavorite: (song: Song) => void;
   isFavorite: (id: string) => boolean;
   recordPlay: (song: Song) => void;
@@ -33,11 +36,17 @@ type LibraryActions = {
 export const useLibraryStore = create<LibraryState & LibraryActions>()(
   persist(
     (set, get) => ({
+      displayName: null,
       favorites: [],
       recentlyPlayed: [],
       playlists: [],
       hydrated: false,
       setHydrated: (value) => set({ hydrated: value }),
+      setDisplayName: (name) => {
+        const next = displayNameFromStorage(name);
+        if (!next) return;
+        set({ displayName: next });
+      },
       toggleFavorite: (song) => {
         const exists = get().favorites.some((item) => item.id === song.id);
         set({
@@ -111,7 +120,7 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
       name: "vibe-library",
       skipHydration: true,
       storage: createSafePersistStorage(),
-      version: 1,
+      version: 2,
       migrate: (persisted) => persisted as LibraryState,
       merge: (persisted, current) => {
         const stored = (persisted ?? {}) as Partial<LibraryState>;
@@ -129,6 +138,7 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
         return {
           ...current,
           ...stored,
+          displayName: displayNameFromStorage(stored.displayName),
           favorites: persistedSongs(stored.favorites),
           recentlyPlayed: persistedSongs(stored.recentlyPlayed),
           playlists,
@@ -136,6 +146,7 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
         };
       },
       partialize: (state) => ({
+        displayName: state.displayName,
         favorites: state.favorites,
         recentlyPlayed: state.recentlyPlayed,
         playlists: state.playlists,

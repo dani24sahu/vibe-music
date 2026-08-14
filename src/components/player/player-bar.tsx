@@ -53,8 +53,10 @@ export function PlayerBar() {
 
   const RepeatIcon = repeat === "one" ? Repeat1 : Repeat;
 
+  if (!song) return null;
+
   return (
-    <footer className="pointer-events-none fixed inset-x-0 bottom-[var(--mobile-nav-offset)] z-50 px-3 lg:px-4 lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <footer className="pointer-events-none w-full lg:fixed lg:inset-x-0 lg:bottom-0 lg:z-50 lg:px-4 lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="pointer-events-auto glass-panel mx-auto max-w-6xl overflow-hidden rounded-2xl shadow-2xl lg:rounded-[1.8rem]">
         {error ? (
           <p className="border-b border-destructive/30 bg-destructive/10 px-4 py-1 text-center text-xs text-destructive">

@@ -3,6 +3,7 @@
 import { SongRow } from "@/components/media/song-row";
 import { SongRowSkeleton } from "@/components/states/skeletons";
 import { EmptyState } from "@/components/states/status";
+import { possessiveName } from "@/lib/profile";
 import { usePlayback } from "@/hooks/use-playback";
 import { Button } from "@/components/ui/button";
 import { useLibraryStore } from "@/stores/library-store";
@@ -10,6 +11,7 @@ import { useLibraryStore } from "@/stores/library-store";
 export default function FavoritesPage() {
   const hydrated = useLibraryStore((state) => state.hydrated);
   const favorites = useLibraryStore((state) => state.favorites);
+  const displayName = useLibraryStore((state) => state.displayName);
   const { play } = usePlayback();
 
   if (!hydrated) return <SongRowSkeleton />;
@@ -29,7 +31,9 @@ export default function FavoritesPage() {
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">liked</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            {displayName ? `${possessiveName(displayName)} liked` : "liked"}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {favorites.length} song{favorites.length === 1 ? "" : "s"} saved on this device
           </p>

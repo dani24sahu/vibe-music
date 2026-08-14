@@ -5,12 +5,14 @@ import { MediaCard } from "@/components/media/media-card";
 import { EmptyState } from "@/components/states/status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { possessiveName } from "@/lib/profile";
 import { useLibraryStore } from "@/stores/library-store";
 
 export default function LibraryPage() {
   const hydrated = useLibraryStore((state) => state.hydrated);
   const playlists = useLibraryStore((state) => state.playlists);
   const createPlaylist = useLibraryStore((state) => state.createPlaylist);
+  const displayName = useLibraryStore((state) => state.displayName);
   const [name, setName] = useState("");
 
   function onCreate(event: FormEvent) {
@@ -25,7 +27,9 @@ export default function LibraryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight">your mixes</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          {displayName ? `${possessiveName(displayName)} mixes` : "your mixes"}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Personal playlists stay in this browser. They are not uploaded anywhere.
         </p>

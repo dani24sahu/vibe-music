@@ -2,6 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import * as musicApi from "@/lib/api/music";
+import { shouldUseCacheFallback } from "@/lib/offline/cache-policy";
+import { findLocalSong } from "@/lib/offline/local-library";
 import { queryKeys } from "@/lib/query-keys";
 
 const searchOptions = {
@@ -62,7 +64,17 @@ export function usePlaylistSearch(query: string) {
 export function useSong(id: string) {
   return useQuery({
     queryKey: queryKeys.song(id),
-    queryFn: () => musicApi.getSong(id),
+    queryFn: async () => {
+      try {
+        return await musicApi.getSong(id);
+      } catch (error) {
+        if (shouldUseCacheFallback(error)) {
+          const local = findLocalSong(id);
+          if (local) return local;
+        }
+        throw error;
+      }
+    },
     enabled: Boolean(id),
     staleTime: 5 * 60_000,
     retry: 1,
@@ -119,12 +131,15 @@ export function useLyrics(song: {
   return useQuery({
     queryKey: queryKeys.lyrics(song?.id ?? ""),
     queryFn: () =>
-      musicApi.getLyrics({
-        title: song!.name,
-        artist: song!.artist,
-        album: song?.album,
-        duration: song?.duration,
-      }),
+      musicApi.getLyrics(
+        {
+          title: song!.name,
+          artist: song!.artist,
+          album: song?.album,
+          duration: song?.duration,
+        },
+        song!.id,
+      ),
     enabled: Boolean(song?.id && song.name && song.artist),
     staleTime: 30 * 60_000,
     retry: 1,

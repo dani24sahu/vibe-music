@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { getSong } from "@/lib/api/music";
+import { isBrowserOnline } from "@/lib/offline/cache-policy";
 import { queryKeys } from "@/lib/query-keys";
 import { useLibraryStore } from "@/stores/library-store";
 import { usePlayerStore } from "@/stores/player-store";
@@ -9,6 +10,7 @@ import type { Song } from "@/types/music";
 
 async function ensurePlayable(song: Song, queryClient: ReturnType<typeof useQueryClient>) {
   if ((song.playbackSources?.length ?? 0) > 0) return song;
+  if (!isBrowserOnline()) return song;
   try {
     return await queryClient.fetchQuery({
       queryKey: queryKeys.song(song.id),

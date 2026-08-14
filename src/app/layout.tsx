@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist_Mono, Outfit } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { AppProviders } from "@/components/providers";
 import "./globals.css";
 
@@ -20,9 +21,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: "Vibe",
   title: "Vibe — personal music player",
   description:
     "Local-development music player for searching and playing tracks through a personal Next.js adapter.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Vibe",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -44,6 +62,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full overflow-x-hidden bg-background font-sans text-foreground">
         <AppProviders>
+          <ServiceWorkerRegister />
           <AppShell>{children}</AppShell>
         </AppProviders>
       </body>

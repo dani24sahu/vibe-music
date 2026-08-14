@@ -77,8 +77,9 @@
   --chart-4: oklch(0.75 0.14 50);
   --chart-5: oklch(0.65 0.18 250);
   --radius: 1rem;
-  --mobile-nav-offset: 4.5rem;
-  --player-bar-h: 4.75rem;
+  --mobile-nav-offset: 5.5rem;
+  --player-bar-h: 5.75rem;
+  --bottom-stack-gap: 0.5rem;
   --sidebar: oklch(0.99 0.012 350 / 0.8);
   --sidebar-foreground: oklch(0.22 0.04 320);
   --sidebar-primary: oklch(0.62 0.24 350);

@@ -2,11 +2,14 @@
 
 import { useEffect, useRef } from "react";
 import { getSong } from "@/lib/api/music";
+import { useOnlineStatus } from "@/hooks/use-online-status";
+import { cacheSongMetadata } from "@/lib/offline/metadata-cache";
+import { isBrowserOnline } from "@/lib/offline/cache-policy";
 import {
-  currentSong,
-  currentStreamSrc,
-  usePlayerStore,
-} from "@/stores/player-store";
+  canPlayAudioSource,
+  resolveAudioSource,
+} from "@/lib/player/audio-source";
+import { currentSong, usePlayerStore } from "@/stores/player-store";
 import { useLibraryStore } from "@/stores/library-store";
 
 export function AudioEngine() {
@@ -26,7 +29,9 @@ export function AudioEngine() {
   const setError = usePlayerStore((state) => state.setError);
   const replaceCurrent = usePlayerStore((state) => state.replaceCurrent);
   const recordPlay = useLibraryStore((state) => state.recordPlay);
-  const src = currentStreamSrc(song, preferredQuality);
+  const online = useOnlineStatus();
+  const audioSource = resolveAudioSource(song, preferredQuality);
+  const src = canPlayAudioSource(audioSource, online) ? audioSource.url : null;
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -117,11 +122,19 @@ export function AudioEngine() {
   }, [isPlaying, src, setError]);
 
   useEffect(() => {
-    if (song) recordPlay(song);
+    if (!song) return;
+    recordPlay(song);
+    void cacheSongMetadata(song);
   }, [recordPlay, song]);
 
   useEffect(() => {
+    if (!song || online || audioSource.offlineAvailable) return;
+    setError("You're offline — streaming needs a connection.");
+  }, [audioSource.offlineAvailable, online, setError, song]);
+
+  useEffect(() => {
     if (!song || (song.playbackSources?.length ?? 0) > 0) return;
+    if (!isBrowserOnline()) return;
     void getSong(song.id)
       .then((full) => replaceCurrent(full))
       .catch(() => setError("Could not load a playable version of this track."));
