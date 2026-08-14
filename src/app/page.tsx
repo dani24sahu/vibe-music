@@ -1,69 +1,171 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { MediaCard } from "@/components/media/media-card";
+import { SongRow } from "@/components/media/song-row";
+import { CardGridSkeleton, SongRowSkeleton } from "@/components/states/skeletons";
+import { EmptyState, ErrorState } from "@/components/states/status";
+import { usePlayback } from "@/hooks/use-playback";
+import { searchPlaylists, searchSongs } from "@/lib/api/music";
+import { useLibraryStore } from "@/stores/library-store";
+
+const DISCOVER_SONGS_QUERY = "bollywood hits";
+const DISCOVER_PLAYLISTS_QUERY = "indie english";
+
+export default function HomePage() {
+  const recentlyPlayed = useLibraryStore((state) => state.recentlyPlayed);
+  const favorites = useLibraryStore((state) => state.favorites);
+  const playlists = useLibraryStore((state) => state.playlists);
+  const { play } = usePlayback();
+
+  const discoverSongs = useQuery({
+    queryKey: ["discover", "songs", DISCOVER_SONGS_QUERY],
+    queryFn: () => searchSongs(DISCOVER_SONGS_QUERY, 0, 10),
+    staleTime: 5 * 60_000,
+  });
+  const discoverPlaylists = useQuery({
+    queryKey: ["discover", "playlists", DISCOVER_PLAYLISTS_QUERY],
+    queryFn: () => searchPlaylists(DISCOVER_PLAYLISTS_QUERY, 0, 8),
+    staleTime: 5 * 60_000,
+  });
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-10">
+      <section className="relative overflow-hidden rounded-[1.8rem] px-5 py-8 sm:px-8 sm:py-12">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-hot/10 to-transparent" />
+        <div className="relative">
+          <p className="text-xs font-semibold tracking-[0.22em] text-primary uppercase">
+            tonight's energy
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <h1 className="font-display mt-3 max-w-xl text-4xl leading-[0.95] font-bold tracking-tight sm:text-6xl">
+            what’s the <span className="text-gradient">vibe</span>
+          </h1>
+          <p className="mt-4 max-w-md text-sm text-muted-foreground sm:text-base">
+            Search it. Queue it. Loop it. Your player, your night.
+          </p>
+          <Link
+            href="/search"
+            className="mt-6 inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition hover:scale-[1.03]"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            start searching
+          </Link>
         </div>
-      </main>
+      </section>
+
+      {recentlyPlayed.length > 0 ? (
+        <section className="space-y-4">
+          <SectionTitle href="/recent" title="on repeat" />
+          <div className="stagger-in space-y-1">
+            {recentlyPlayed.slice(0, 6).map((song) => (
+              <SongRow key={song.id} song={song} queue={recentlyPlayed} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {favorites.length > 0 ? (
+        <section className="space-y-4">
+          <SectionTitle href="/favorites" title="liked rn" />
+          <div className="stagger-in grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+            {favorites.slice(0, 5).map((song) => (
+              <MediaCard
+                key={song.id}
+                href={`/song/${song.id}`}
+                title={song.name}
+                subtitle={song.artists.primary[0]?.name}
+                images={song.image}
+                onPlay={() => void play(song, favorites)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {playlists.length > 0 ? (
+        <section className="space-y-4">
+          <SectionTitle href="/library" title="your mixes" />
+          <div className="stagger-in grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+            {playlists.slice(0, 5).map((playlist) => (
+              <MediaCard
+                key={playlist.id}
+                href={`/library/${playlist.id}`}
+                title={playlist.name}
+                subtitle={`${playlist.songs.length} songs`}
+                images={playlist.songs[0]?.image ?? []}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl font-bold">discover</h2>
+        {discoverSongs.isLoading ? <SongRowSkeleton /> : null}
+        {discoverSongs.isError ? (
+          <ErrorState
+            description="Discover songs could not be loaded from the music service."
+            onRetry={() => void discoverSongs.refetch()}
+          />
+        ) : null}
+        {discoverSongs.data?.results.length === 0 ? (
+          <EmptyState
+            title="No discover results"
+            description="The music service returned no songs for this browse query."
+            actionHref="/search"
+            actionLabel="Search instead"
+          />
+        ) : null}
+        {discoverSongs.data?.results.length ? (
+          <div className="stagger-in space-y-1">
+            {discoverSongs.data.results.map((song) => (
+              <SongRow
+                key={song.id}
+                song={song}
+                queue={discoverSongs.data.results}
+              />
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl font-bold">featured mixes</h2>
+        {discoverPlaylists.isLoading ? <CardGridSkeleton /> : null}
+        {discoverPlaylists.isError ? (
+          <ErrorState
+            description="Playlists could not be loaded from the music service."
+            onRetry={() => void discoverPlaylists.refetch()}
+          />
+        ) : null}
+        {discoverPlaylists.data?.results.length ? (
+          <div className="stagger-in grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 xl:grid-cols-6">
+            {discoverPlaylists.data.results.map((playlist) => (
+              <MediaCard
+                key={playlist.id}
+                href={`/playlist/${playlist.id}`}
+                title={playlist.name}
+                subtitle={playlist.language || "Playlist"}
+                images={playlist.image}
+              />
+            ))}
+          </div>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
+function SectionTitle({ href, title }: { href: string; title: string }) {
+  return (
+    <div className="flex items-end justify-between">
+      <h2 className="font-display text-2xl font-bold">{title}</h2>
+      <Link
+        href={href}
+        className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+      >
+        see all
+      </Link>
     </div>
   );
 }

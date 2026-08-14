@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vibe
 
-## Getting Started
+A personal music player. Search the catalog, queue tracks, and play them in the browser. The UI never talks to third-party APIs — Next.js route handlers fetch JioSaavn metadata and LRCLIB lyrics on the server, and audio is proxied through `/api/stream`.
 
-First, run the development server:
+## Setup
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Environment variables are optional. Defaults match `.env.example`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `SAAVN_API_BASE_URL` | `https://saavn.sumit.co` | Catalog API (server only) |
+| `SAAVN_API_TIMEOUT_MS` | `15000` | Upstream catalog timeout |
+| `LRCLIB_API_BASE_URL` | `https://lrclib.net` | Synced lyrics (server only) |
+| `LRCLIB_API_TIMEOUT_MS` | `12000` | Lyrics timeout |
 
-## Learn More
+None of these are `NEXT_PUBLIC_*`. The browser only calls this app’s `/api/*` routes.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run dev      # development
+npm test         # vitest
+npm run build    # production build
+npm start        # serve the production build
+npm run lint     # eslint
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## What it does
 
-## Deploy on Vercel
+- Search songs, albums, artists, and playlists
+- Persistent player: play/pause, seek, volume, queue, shuffle, repeat, quality
+- Synced lyrics on the now-playing screen (when LRCLIB has a match)
+- Favorites, recently played, and local playlists stored in `localStorage` on this device
+- Light / dark theme
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Artist **Popular** lists only tracks that credit that artist as a performer (primary or featured). Generic song search is unchanged, so searching an artist name can still return karaoke or covers.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Architecture
+
+```
+Browser  →  Next.js App Router  →  saavn.sumit.co (catalog)
+                                →  lrclib.net (lyrics)
+                                →  aac.saavncdn.com via /api/stream (audio)
+```
+
+Playback URLs from the catalog’s `downloadUrl` field are mapped to in-app `playbackSources` and played through the stream proxy. There is no download UI.
+
+This uses unofficial public APIs. Some Western artist pages return no original recordings from JioSaavn; Popular stays empty rather than showing unrelated covers.
+
+## Production
+
+```bash
+npm run build
+npm start
+```
+
+Works with `next start` or a Node host. On short-lived serverless platforms, artist pages can be slower when the dedicated artist-songs endpoint is empty and search has to be paged.

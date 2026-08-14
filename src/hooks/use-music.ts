@@ -1,0 +1,132 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import * as musicApi from "@/lib/api/music";
+import { queryKeys } from "@/lib/query-keys";
+
+const searchOptions = {
+  enabled: false as boolean,
+  staleTime: 60_000,
+  retry: 1,
+};
+
+export function useGlobalSearch(query: string) {
+  return useQuery({
+    queryKey: queryKeys.searchAll(query),
+    queryFn: () => musicApi.searchAll(query),
+    enabled: query.length > 0,
+    staleTime: 60_000,
+    retry: 1,
+  });
+}
+
+export function useSongSearch(query: string) {
+  return useQuery({
+    queryKey: queryKeys.searchSongs(query),
+    queryFn: () => musicApi.searchSongs(query),
+    enabled: query.length > 0,
+    staleTime: 60_000,
+    retry: 1,
+  });
+}
+
+export function useAlbumSearch(query: string) {
+  return useQuery({
+    queryKey: queryKeys.searchAlbums(query),
+    queryFn: () => musicApi.searchAlbums(query),
+    ...searchOptions,
+    enabled: query.length > 0,
+  });
+}
+
+export function useArtistSearch(query: string) {
+  return useQuery({
+    queryKey: queryKeys.searchArtists(query),
+    queryFn: () => musicApi.searchArtists(query),
+    enabled: query.length > 0,
+    staleTime: 60_000,
+    retry: 1,
+  });
+}
+
+export function usePlaylistSearch(query: string) {
+  return useQuery({
+    queryKey: queryKeys.searchPlaylists(query),
+    queryFn: () => musicApi.searchPlaylists(query),
+    enabled: query.length > 0,
+    staleTime: 60_000,
+    retry: 1,
+  });
+}
+
+export function useSong(id: string) {
+  return useQuery({
+    queryKey: queryKeys.song(id),
+    queryFn: () => musicApi.getSong(id),
+    enabled: Boolean(id),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+}
+
+export function useSuggestions(id: string) {
+  return useQuery({
+    queryKey: queryKeys.suggestions(id),
+    queryFn: () => musicApi.getSuggestions(id),
+    enabled: Boolean(id),
+    staleTime: 5 * 60_000,
+    retry: 0,
+  });
+}
+
+export function useAlbum(id: string) {
+  return useQuery({
+    queryKey: queryKeys.album(id),
+    queryFn: () => musicApi.getAlbum(id),
+    enabled: Boolean(id),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+}
+
+export function useArtist(id: string) {
+  return useQuery({
+    queryKey: queryKeys.artist(id),
+    queryFn: () => musicApi.getArtist(id),
+    enabled: Boolean(id),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+}
+
+export function usePlaylist(id: string) {
+  return useQuery({
+    queryKey: queryKeys.playlist(id),
+    queryFn: () => musicApi.getPlaylist(id),
+    enabled: Boolean(id),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+}
+
+export function useLyrics(song: {
+  id: string;
+  name: string;
+  artist: string;
+  album?: string | null;
+  duration?: number | null;
+} | null) {
+  return useQuery({
+    queryKey: queryKeys.lyrics(song?.id ?? ""),
+    queryFn: () =>
+      musicApi.getLyrics({
+        title: song!.name,
+        artist: song!.artist,
+        album: song?.album,
+        duration: song?.duration,
+      }),
+    enabled: Boolean(song?.id && song.name && song.artist),
+    staleTime: 30 * 60_000,
+    retry: 1,
+  });
+}
