@@ -9,6 +9,7 @@ import { useSong, useSuggestions, useLyrics } from "@/hooks/use-music";
 import { usePlayback } from "@/hooks/use-playback";
 import { formatQualityLabel, playableSources } from "@/lib/player/quality";
 import { primaryArtistName } from "@/lib/format";
+import { lyricsForSong } from "@/lib/player/lyrics";
 import { SyncedLyrics } from "@/components/player/synced-lyrics";
 import { currentSong, usePlayerStore } from "@/stores/player-store";
 
@@ -94,13 +95,16 @@ export default function SongPage() {
         </div>
         <div className="overflow-hidden rounded-[1.4rem] border border-border/60 bg-card/70">
           <SyncedLyrics
-            lyrics={lyrics.data}
+            lyrics={lyricsForSong(lyrics.data, song.id)}
             currentTime={playing?.id === song.id ? currentTime : 0}
             onSeek={playing?.id === song.id ? seek : undefined}
             follow={playing?.id === song.id}
             tone="light"
-            isLoading={lyrics.isLoading}
-            isError={lyrics.isError}
+            isLoading={
+              lyrics.isPlaceholderData ||
+              (!lyricsForSong(lyrics.data, song.id) && (lyrics.isLoading || lyrics.isFetching))
+            }
+            isError={lyrics.isError && !lyricsForSong(lyrics.data, song.id)}
             onRetry={() => void lyrics.refetch()}
             className="max-h-[28rem] px-4"
           />

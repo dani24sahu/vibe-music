@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/types/lyrics";
+import type { LyricLine, LyricsResult } from "@/types/lyrics";
 
 const TIMESTAMP = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
 const ENHANCED_WORD = /<\d{1,2}:\d{2}(?:\.\d{1,3})?>/g;
@@ -80,4 +80,10 @@ export function activeLyricText(lines: LyricLine[], currentTime: number) {
   if (index < 0) return null;
   const text = lines[index]?.text?.replace(/\s+/g, " ").trim();
   return text || null;
+}
+
+export function lyricsForSong(lyrics: LyricsResult | undefined, songId: string | undefined) {
+  if (!lyrics || !songId) return undefined;
+  if (lyrics.songId && lyrics.songId !== songId) return undefined;
+  return lyrics;
 }

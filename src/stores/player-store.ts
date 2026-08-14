@@ -90,12 +90,20 @@ export const usePlayerStore = create<PlayerStore>()(
           currentIndex: get().shuffle ? 0 : index === -1 ? 0 : index,
           isPlaying: true,
           currentTime: 0,
+          duration: song.duration ?? 0,
           error: null,
         });
       },
       playAt: (index) => {
         if (index < 0 || index >= get().queue.length) return;
-        set({ currentIndex: index, isPlaying: true, currentTime: 0, error: null });
+        const nextSong = get().queue[index];
+        set({
+          currentIndex: index,
+          isPlaying: true,
+          currentTime: 0,
+          duration: nextSong?.duration ?? 0,
+          error: null,
+        });
       },
       togglePlay: () => {
         if (get().queue.length === 0) return;
@@ -109,7 +117,13 @@ export const usePlayerStore = create<PlayerStore>()(
           set({ isPlaying: false });
           return;
         }
-        set({ currentIndex: upcoming, currentTime: 0, isPlaying: true, error: null });
+        set({
+          currentIndex: upcoming,
+          currentTime: 0,
+          duration: queue[upcoming]?.duration ?? 0,
+          isPlaying: true,
+          error: null,
+        });
       },
       previous: () => {
         const { queue, currentIndex, currentTime } = get();
@@ -119,7 +133,13 @@ export const usePlayerStore = create<PlayerStore>()(
         }
         const previous = previousIndex(currentIndex, queue.length);
         if (previous === null) return;
-        set({ currentIndex: previous, currentTime: 0, isPlaying: true, error: null });
+        set({
+          currentIndex: previous,
+          currentTime: 0,
+          duration: get().queue[previous]?.duration ?? 0,
+          isPlaying: true,
+          error: null,
+        });
       },
       seek: (time) => set({ currentTime: time }),
       setCurrentTime: (time) => set({ currentTime: time }),

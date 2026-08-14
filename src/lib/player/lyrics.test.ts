@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   activeLyricIndex,
   activeLyricText,
+  lyricsForSong,
   parseLrc,
   parseTimecode,
   plainLyricsToLines,
@@ -42,6 +43,24 @@ describe("lrc parser", () => {
     expect(activeLyricText(lines, 10)).toBeNull();
     expect(activeLyricText(lines, 18)).toBe("I feel your breath upon my neck");
     expect(activeLyricText(lines, 30)).toBe("With nothing to do");
+  });
+
+  it("ignores lyrics tagged for a different song", () => {
+    const lyrics = {
+      found: true,
+      instrumental: false,
+      synced: true,
+      source: "lrclib" as const,
+      title: "About You",
+      artist: "The 1975",
+      lines: [{ time: 17.12, text: "I feel your breath upon my neck" }],
+      songId: "song-a",
+    };
+    expect(lyricsForSong(lyrics, "song-a")?.title).toBe("About You");
+    expect(lyricsForSong(lyrics, "song-b")).toBeUndefined();
+    expect(lyricsForSong({ ...lyrics, songId: undefined }, "song-b")?.title).toBe(
+      "About You",
+    );
   });
 
   it("keeps unsynced lyrics as plain lines", () => {

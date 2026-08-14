@@ -153,7 +153,7 @@ export async function getLyrics(query: LyricsQuery, songId?: string) {
     cached &&
     shouldReuseCachedLyrics(cached.cachedAt, cached.result.found, isBrowserOnline())
   ) {
-    return cached.result;
+    return { ...cached.result, songId: cacheKey };
   }
 
   try {
@@ -163,10 +163,13 @@ export async function getLyrics(query: LyricsQuery, songId?: string) {
       album: query.album ?? undefined,
       duration: query.duration ?? undefined,
     });
-    void cacheLyrics(cacheKey, result);
-    return result;
+    const tagged = { ...result, songId: cacheKey };
+    void cacheLyrics(cacheKey, tagged);
+    return tagged;
   } catch (error) {
-    if (cached && shouldUseCacheFallback(error)) return cached.result;
+    if (cached && shouldUseCacheFallback(error)) {
+      return { ...cached.result, songId: cacheKey };
+    }
     if (!isBrowserOnline()) {
       throw offlineError("You're offline. Lyrics for this track haven't been cached yet.");
     }

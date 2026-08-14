@@ -9,5 +9,19 @@ export const queryKeys = {
   album: (id: string) => ["album", id] as const,
   artist: (id: string) => ["artist", id] as const,
   playlist: (id: string) => ["playlist", id] as const,
-  lyrics: (id: string) => ["lyrics", id] as const,
+  lyrics: (song: {
+    id: string;
+    name: string;
+    artist: string;
+    album?: string | null;
+    duration?: number | null;
+  }) =>
+    [
+      "lyrics",
+      song.id,
+      song.name,
+      song.artist,
+      song.album ?? "",
+      song.duration ?? 0,
+    ] as const,
 };

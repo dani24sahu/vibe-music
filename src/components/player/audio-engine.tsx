@@ -17,6 +17,7 @@ export function AudioEngine() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const timeRef = useRef(0);
   const songIdRef = useRef<string | undefined>(undefined);
+  const playingIdRef = useRef<string | undefined>(undefined);
   const song = usePlayerStore(currentSong);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const volume = usePlayerStore((state) => state.volume);
@@ -33,6 +34,7 @@ export function AudioEngine() {
   const online = useOnlineStatus();
   const audioSource = resolveAudioSource(song, preferredQuality);
   const src = canPlayAudioSource(audioSource, online) ? audioSource.url : null;
+  playingIdRef.current = song?.id;
   useMediaSession();
 
   useEffect(() => {
@@ -40,6 +42,7 @@ export function AudioEngine() {
     if (!audio) return;
 
     const onTime = () => {
+      if (songIdRef.current !== playingIdRef.current) return;
       timeRef.current = audio.currentTime;
       setCurrentTime(audio.currentTime);
     };
@@ -72,6 +75,7 @@ export function AudioEngine() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || audio.readyState < 1) return;
+    if (songIdRef.current !== playingIdRef.current) return;
     if (Math.abs(audio.currentTime - currentTime) > 1.25) {
       try {
         audio.currentTime = currentTime;
@@ -94,6 +98,7 @@ export function AudioEngine() {
 
     const songChanged = songIdRef.current !== song?.id;
     const resumeAt = songChanged ? 0 : timeRef.current;
+    if (songChanged) timeRef.current = 0;
     songIdRef.current = song?.id;
 
     const restore = () => {

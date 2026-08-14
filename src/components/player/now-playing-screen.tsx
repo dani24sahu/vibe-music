@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Slider } from "@/components/ui/slider";
 import { bestArtwork, formatTime, primaryArtistName } from "@/lib/format";
+import { lyricsForSong } from "@/lib/player/lyrics";
 import { cn } from "@/lib/utils";
 import { useLyrics } from "@/hooks/use-music";
 import { useLibraryStore } from "@/stores/library-store";
@@ -85,6 +86,9 @@ export function NowPlayingScreen() {
         }
       : null,
   );
+  const currentLyrics =
+    lyrics.isPlaceholderData ? undefined : lyricsForSong(lyrics.data, song?.id);
+  const lyricsPending = Boolean(song) && !currentLyrics && (lyrics.isLoading || lyrics.isFetching);
 
   function dismiss() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -194,12 +198,13 @@ export function NowPlayingScreen() {
         >
           {showLyrics ? (
             <SyncedLyrics
-              lyrics={lyrics.data}
+              key={song?.id ?? "none"}
+              lyrics={currentLyrics}
               currentTime={currentTime}
               onSeek={seek}
               follow={isPlaying}
-              isLoading={lyrics.isLoading}
-              isError={lyrics.isError}
+              isLoading={lyricsPending}
+              isError={lyrics.isError && !currentLyrics}
               onRetry={() => void lyrics.refetch()}
             />
           ) : (
@@ -221,7 +226,9 @@ export function NowPlayingScreen() {
           <>
             {!showLyrics ? (
               <NowPlayingLyricLine
-                lyrics={lyrics.data}
+                key={song.id}
+                lyrics={currentLyrics}
+                songId={song.id}
                 currentTime={currentTime}
                 onOpen={() => setShowLyrics(true)}
               />

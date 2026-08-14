@@ -129,19 +129,24 @@ export function useLyrics(song: {
   duration?: number | null;
 } | null) {
   return useQuery({
-    queryKey: queryKeys.lyrics(song?.id ?? ""),
-    queryFn: () =>
-      musicApi.getLyrics(
+    queryKey: queryKeys.lyrics(
+      song ?? { id: "__idle__", name: "", artist: "" },
+    ),
+    queryFn: ({ queryKey }) => {
+      const [, id, name, artist, album, duration] = queryKey;
+      return musicApi.getLyrics(
         {
-          title: song!.name,
-          artist: song!.artist,
-          album: song?.album,
-          duration: song?.duration,
+          title: name,
+          artist,
+          album: album || null,
+          duration: typeof duration === "number" ? duration : null,
         },
-        song!.id,
-      ),
+        id,
+      );
+    },
     enabled: Boolean(song?.id && song.name && song.artist),
     staleTime: 30 * 60_000,
     retry: 1,
+    placeholderData: undefined,
   });
 }

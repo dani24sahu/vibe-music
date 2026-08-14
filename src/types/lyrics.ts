@@ -11,6 +11,7 @@ export type LyricsResult = {
   title: string | null;
   artist: string | null;
   lines: LyricLine[];
+  songId?: string;
 };
 
 export type LyricsQuery = {
