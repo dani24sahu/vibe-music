@@ -12,6 +12,7 @@ import { ProfileButton } from "@/components/profile/profile-button";
 import { InstallVibeButton } from "@/components/pwa/install-vibe";
 import { MobileOfflineBar, OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { WhatsNewHost } from "@/components/whats-new/whats-new-dialog";
 import { cn } from "@/lib/utils";
 import { currentSong, usePlayerStore } from "@/stores/player-store";
 import Link from "next/link";
@@ -23,7 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const showPlayer = Boolean(song);
 
   return (
-    <>
+    <WhatsNewHost>
       {nowPlaying ? (
         children
       ) : (
@@ -70,6 +71,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       <AudioEngine />
       <KeyboardShortcuts />
       <FirstRunNamePrompt />
-    </>
+    </WhatsNewHost>
   );
 }

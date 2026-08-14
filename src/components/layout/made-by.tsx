@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { WhatsNewTrigger } from "@/components/whats-new/whats-new-dialog";
 
 const links = [
   {
@@ -20,7 +23,7 @@ const links = [
 
 export function MadeBy({ className }: { className?: string }) {
   return (
-    <p
+    <div
       className={cn(
         "px-1 text-center text-[11px] leading-relaxed text-muted-foreground",
         className,
@@ -48,7 +51,8 @@ export function MadeBy({ className }: { className?: string }) {
           </a>
         ))}
       </span>
-    </p>
+      <WhatsNewTrigger className="mt-2 block w-full text-[11px] text-muted-foreground transition-colors hover:text-foreground" />
+    </div>
   );
 }
 

@@ -23,6 +23,7 @@ import {
 import { AddToPlaylistDialog } from "@/components/library/add-to-playlist-dialog";
 import { Artwork } from "@/components/media/artwork";
 import { AudioQualitySelector } from "@/components/player/audio-quality-selector";
+import { NowPlayingLyricLine } from "@/components/player/now-playing-lyric";
 import { QueueSheet } from "@/components/player/queue-sheet";
 import { SyncedLyrics } from "@/components/player/synced-lyrics";
 import { Button } from "@/components/ui/button";
@@ -218,6 +219,13 @@ export function NowPlayingScreen() {
 
         {song ? (
           <>
+            {!showLyrics ? (
+              <NowPlayingLyricLine
+                lyrics={lyrics.data}
+                currentTime={currentTime}
+                onOpen={() => setShowLyrics(true)}
+              />
+            ) : null}
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1">
                 <h1 className="font-display truncate text-2xl font-bold tracking-tight sm:text-3xl">

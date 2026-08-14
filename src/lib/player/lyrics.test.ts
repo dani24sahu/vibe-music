@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activeLyricIndex,
+  activeLyricText,
   parseLrc,
   parseTimecode,
   plainLyricsToLines,
@@ -38,6 +39,9 @@ describe("lrc parser", () => {
     expect(activeLyricIndex(lines, 30)).toBe(1);
     expect(activeLyricIndex(lines, 70)).toBe(2);
     expect(activeLyricIndex(lines, 71)).toBe(3);
+    expect(activeLyricText(lines, 10)).toBeNull();
+    expect(activeLyricText(lines, 18)).toBe("I feel your breath upon my neck");
+    expect(activeLyricText(lines, 30)).toBe("With nothing to do");
   });
 
   it("keeps unsynced lyrics as plain lines", () => {

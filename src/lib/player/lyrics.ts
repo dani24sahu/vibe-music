@@ -74,3 +74,10 @@ export function activeLyricIndex(lines: LyricLine[], currentTime: number) {
   }
   return index;
 }
+
+export function activeLyricText(lines: LyricLine[], currentTime: number) {
+  const index = activeLyricIndex(lines, currentTime);
+  if (index < 0) return null;
+  const text = lines[index]?.text?.replace(/\s+/g, " ").trim();
+  return text || null;
+}
