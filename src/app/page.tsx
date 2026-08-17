@@ -8,6 +8,7 @@ import { SongRow } from "@/components/media/song-row";
 import { CardGridSkeleton, SongRowSkeleton } from "@/components/states/skeletons";
 import { EmptyState, ErrorState } from "@/components/states/status";
 import { usePlayback } from "@/hooks/use-playback";
+import { useTonightStation } from "@/hooks/use-tonight-station";
 import { searchPlaylists, searchSongs } from "@/lib/api/music";
 import { greetingForNow } from "@/lib/profile";
 import { useLibraryStore } from "@/stores/library-store";
@@ -21,6 +22,7 @@ export default function HomePage() {
   const playlists = useLibraryStore((state) => state.playlists);
   const displayName = useLibraryStore((state) => state.displayName);
   const { play } = usePlayback();
+  const { plan, playStation, starting } = useTonightStation();
   const greeting = greetingForNow();
 
   const discoverSongs = useQuery({
@@ -46,16 +48,37 @@ export default function HomePage() {
             what’s the <span className="text-gradient">vibe</span>
           </h1>
           <p className="mt-4 max-w-md text-sm text-muted-foreground sm:text-base">
-            {displayName
-              ? `Search it. Queue it. Loop it. Your night, ${displayName}.`
-              : "Search it. Queue it. Loop it. Your player, your night."}
+            {plan.canPlay
+              ? plan.caption
+              : displayName
+                ? `Search it. Queue it. Loop it. Your night, ${displayName}.`
+                : "Search it. Queue it. Loop it. Your player, your night."}
           </p>
-          <Link
-            href="/search"
-            className="mt-6 inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition hover:scale-[1.03]"
-          >
-            start searching
-          </Link>
+          {plan.canPlay ? (
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => void playStation()}
+                disabled={starting}
+                className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition hover:scale-[1.03] disabled:pointer-events-none disabled:opacity-60"
+              >
+                {starting ? "starting…" : plan.playLabel}
+              </button>
+              <Link
+                href="/search"
+                className="inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
+              >
+                search instead
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href="/search"
+              className="mt-6 inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition hover:scale-[1.03]"
+            >
+              start searching
+            </Link>
+          )}
         </div>
       </section>
 
