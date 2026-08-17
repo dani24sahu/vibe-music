@@ -18,6 +18,7 @@ import {
 import { Artwork } from "@/components/media/artwork";
 import { Equalizer } from "@/components/media/equalizer";
 import { AudioQualitySelector } from "@/components/player/audio-quality-selector";
+import { EqSheet } from "@/components/player/eq-sheet";
 import { QueueSheet } from "@/components/player/queue-sheet";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -205,6 +206,9 @@ export function PlayerBar() {
               <RepeatIcon className="size-4" />
             </Button>
             <div className="lg:hidden">
+              <EqSheet compact />
+            </div>
+            <div className="lg:hidden">
               <AudioQualitySelector compact sources={song?.playbackSources ?? []} />
             </div>
           </div>
@@ -213,6 +217,7 @@ export function PlayerBar() {
             {isBuffering ? (
               <span className="text-[11px] text-muted-foreground">loading…</span>
             ) : null}
+            <EqSheet />
             <AudioQualitySelector sources={song?.playbackSources ?? []} />
             <Button
               size="icon-sm"

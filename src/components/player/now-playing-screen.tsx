@@ -23,6 +23,7 @@ import {
 import { AddToPlaylistDialog } from "@/components/library/add-to-playlist-dialog";
 import { Artwork } from "@/components/media/artwork";
 import { AudioQualitySelector } from "@/components/player/audio-quality-selector";
+import { EqSheet } from "@/components/player/eq-sheet";
 import { NowPlayingLyricLine } from "@/components/player/now-playing-lyric";
 import { QueueSheet } from "@/components/player/queue-sheet";
 import { SyncedLyrics } from "@/components/player/synced-lyrics";
@@ -347,6 +348,12 @@ export function NowPlayingScreen() {
               {isBuffering ? (
                 <span className="text-xs text-white/70">loading…</span>
               ) : null}
+              <div className="min-w-0 [&_button]:text-white [&_button]:hover:bg-white/10 [&_button]:hover:text-white">
+                <EqSheet
+                  compact
+                  triggerClassName="text-white hover:bg-white/10 hover:text-white"
+                />
+              </div>
               <div className="min-w-0 [&_button]:text-white [&_button]:hover:bg-white/10 [&_button]:hover:text-white">
                 <AudioQualitySelector sources={song.playbackSources} />
               </div>

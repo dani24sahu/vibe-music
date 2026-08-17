@@ -10,8 +10,64 @@ import {
   canPlayAudioSource,
   resolveAudioSource,
 } from "@/lib/player/audio-source";
+import { applyEqGains, createEqFilters, type EqGains } from "@/lib/player/eq";
 import { currentSong, usePlayerStore } from "@/stores/player-store";
 import { useLibraryStore } from "@/stores/library-store";
+
+type EqGraph = {
+  ctx: AudioContext;
+  filters: BiquadFilterNode[];
+  gain: GainNode;
+};
+
+const eqGraphs = new WeakMap<HTMLAudioElement, EqGraph>();
+
+function audioContextCtor() {
+  const scoped = window as typeof window & { webkitAudioContext?: typeof AudioContext };
+  return window.AudioContext ?? scoped.webkitAudioContext;
+}
+
+function connectEqGraph(audio: HTMLAudioElement): EqGraph | null {
+  const existing = eqGraphs.get(audio);
+  if (existing && existing.ctx.state !== "closed") return existing;
+
+  const Ctx = audioContextCtor();
+  if (!Ctx) return null;
+
+  try {
+    const ctx = new Ctx();
+    const source = ctx.createMediaElementSource(audio);
+    const filters = createEqFilters(ctx);
+    const gain = ctx.createGain();
+    const first = filters[0];
+    const last = filters[filters.length - 1];
+    if (!first || !last) {
+      void ctx.close();
+      return null;
+    }
+    source.connect(first);
+    for (let index = 0; index < filters.length - 1; index += 1) {
+      filters[index]?.connect(filters[index + 1]!);
+    }
+    last.connect(gain);
+    gain.connect(ctx.destination);
+    const graph = { ctx, filters, gain };
+    eqGraphs.set(audio, graph);
+    return graph;
+  } catch {
+    return existing ?? null;
+  }
+}
+
+function applyGraphVolume(graph: EqGraph | null, volume: number, muted: boolean) {
+  if (!graph) return;
+  graph.gain.gain.value = muted ? 0 : volume;
+}
+
+function applyGraphEq(graph: EqGraph | null, gains: EqGains) {
+  if (!graph) return;
+  applyEqGains(graph.filters, gains, graph.ctx);
+}
 
 export function AudioEngine() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -22,7 +78,9 @@ export function AudioEngine() {
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const volume = usePlayerStore((state) => state.volume);
   const muted = usePlayerStore((state) => state.muted);
+  const eqGains = usePlayerStore((state) => state.eqGains);
   const currentTime = usePlayerStore((state) => state.currentTime);
+  const graphRef = useRef<EqGraph | null>(null);
   const preferredQuality = usePlayerStore((state) => state.preferredQuality);
   const next = usePlayerStore((state) => state.next);
   const setCurrentTime = usePlayerStore((state) => state.setCurrentTime);
@@ -88,9 +146,33 @@ export function AudioEngine() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    const graph = connectEqGraph(audio);
+    graphRef.current = graph;
+    if (!graph) return;
+    audio.volume = 1;
+    audio.muted = false;
+    const state = usePlayerStore.getState();
+    applyGraphVolume(graph, state.volume, state.muted);
+    applyGraphEq(graph, state.eqGains);
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    const graph = graphRef.current;
+    if (!audio) return;
+    if (graph) {
+      audio.volume = 1;
+      audio.muted = false;
+      applyGraphVolume(graph, volume, muted);
+      return;
+    }
     audio.volume = volume;
     audio.muted = muted;
   }, [muted, volume]);
+
+  useEffect(() => {
+    applyGraphEq(graphRef.current, eqGains);
+  }, [eqGains]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -120,6 +202,7 @@ export function AudioEngine() {
     const audio = audioRef.current;
     if (!audio || !src) return;
     if (isPlaying) {
+      void graphRef.current?.ctx.resume();
       void audio.play().catch(() => {
         setError("Playback was blocked. Press play to start audio.");
       });

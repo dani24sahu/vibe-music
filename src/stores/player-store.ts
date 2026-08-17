@@ -1,6 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { resolveAudioSource } from "@/lib/player/audio-source";
+import {
+  clampEqDb,
+  gainsForPreset,
+  isEqPresetId,
+  normalizeEqGains,
+  type EqGains,
+  type EqPresetId,
+} from "@/lib/player/eq";
 import { createSafePersistStorage, persistedSongs } from "@/lib/persist-storage";
 import {
   cycleRepeat,
@@ -24,6 +32,9 @@ type PlayerState = {
   isBuffering: boolean;
   error: string | null;
   preferredQuality: string | null;
+  eqPreset: EqPresetId;
+  eqGains: EqGains;
+  eqCustomGains: EqGains;
   hydrated: boolean;
 };
 
@@ -47,8 +58,11 @@ type PlayerActions = {
   addToQueue: (song: Song) => void;
   removeFromQueue: (index: number) => void;
   clearQueue: () => void;
-  setPreferredQuality: (quality: string) => void;
   replaceCurrent: (song: Song) => void;
+  setPreferredQuality: (quality: string) => void;
+  setEqPreset: (preset: EqPresetId) => void;
+  setEqBand: (index: number, db: number) => void;
+  resetEq: () => void;
 };
 
 export type PlayerStore = PlayerState & PlayerActions;
@@ -67,6 +81,9 @@ const initialState: PlayerState = {
   isBuffering: false,
   error: null,
   preferredQuality: null,
+  eqPreset: "flat",
+  eqGains: gainsForPreset("flat"),
+  eqCustomGains: gainsForPreset("flat"),
   hydrated: false,
 };
 
@@ -216,12 +233,35 @@ export const usePlayerStore = create<PlayerStore>()(
         set({ queue, error: null });
       },
       setPreferredQuality: (quality) => set({ preferredQuality: quality }),
+      setEqPreset: (preset) => {
+        const custom = get().eqCustomGains;
+        set({
+          eqPreset: preset,
+          eqGains: gainsForPreset(preset, custom),
+        });
+      },
+      setEqBand: (index, db) => {
+        if (index < 0 || index >= get().eqGains.length) return;
+        const next = normalizeEqGains(get().eqGains);
+        next[index] = clampEqDb(db);
+        set({
+          eqPreset: "custom",
+          eqGains: next,
+          eqCustomGains: next,
+        });
+      },
+      resetEq: () =>
+        set({
+          eqPreset: "flat",
+          eqGains: gainsForPreset("flat"),
+          eqCustomGains: gainsForPreset("flat"),
+        }),
     }),
     {
       name: "vibe-player",
       skipHydration: true,
       storage: createSafePersistStorage(),
-      version: 1,
+      version: 2,
       migrate: (persisted) => persisted as PlayerState,
       merge: (persisted, current) => {
         const stored = (persisted ?? {}) as Partial<PlayerState>;
@@ -231,12 +271,21 @@ export const usePlayerStore = create<PlayerStore>()(
           Math.max(0, stored.currentIndex ?? 0),
           Math.max(queue.length - 1, 0),
         );
+        const eqPreset = isEqPresetId(stored.eqPreset) ? stored.eqPreset : current.eqPreset;
+        const eqCustomGains = normalizeEqGains(stored.eqCustomGains ?? current.eqCustomGains);
+        const eqGains =
+          eqPreset === "custom"
+            ? normalizeEqGains(stored.eqGains ?? eqCustomGains)
+            : gainsForPreset(eqPreset, eqCustomGains);
         return {
           ...current,
           ...stored,
           queue,
           originalQueue,
           currentIndex,
+          eqPreset,
+          eqGains,
+          eqCustomGains,
           hydrated: false,
         };
       },
@@ -249,6 +298,9 @@ export const usePlayerStore = create<PlayerStore>()(
         volume: state.volume,
         muted: state.muted,
         preferredQuality: state.preferredQuality,
+        eqPreset: state.eqPreset,
+        eqGains: state.eqGains,
+        eqCustomGains: state.eqCustomGains,
       }),
     },
   ),
