@@ -31,6 +31,12 @@ import type {
 } from "@/types/music";
 import type { LyricsQuery, LyricsResult } from "@/types/lyrics";
 
+type FetchOptions = { signal?: AbortSignal; cache?: RequestCache };
+
+function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 async function catalogSearch<T>(request: () => Promise<T>): Promise<T> {
   if (!isBrowserOnline()) {
     throw offlineError("You're offline. Connect to search the catalog.");
@@ -38,6 +44,7 @@ async function catalogSearch<T>(request: () => Promise<T>): Promise<T> {
   try {
     return await request();
   } catch (error) {
+    if (isAbortError(error)) throw error;
     if (error instanceof MusicApiError && error.code === "NETWORK_ERROR") {
       throw offlineError("You're offline. Connect to search the catalog.");
     }
@@ -63,91 +70,91 @@ async function networkFirst<T>(
   }
 }
 
-export function searchAll(query: string) {
-  return catalogSearch(() => apiGet<GlobalSearch>("/api/search", { query }));
+export function searchAll(query: string, options?: FetchOptions) {
+  return catalogSearch(() => apiGet<GlobalSearch>("/api/search", { query }, options));
 }
 
-export function searchSongs(query: string, page = 0, limit = 20) {
+export function searchSongs(query: string, page = 0, limit = 20, options?: FetchOptions) {
   return catalogSearch(() =>
-    apiGet<Paginated<Song>>("/api/search/songs", { query, page, limit }),
+    apiGet<Paginated<Song>>("/api/search/songs", { query, page, limit }, options),
   );
 }
 
-export function searchAlbums(query: string, page = 0, limit = 20) {
+export function searchAlbums(query: string, page = 0, limit = 20, options?: FetchOptions) {
   return catalogSearch(() =>
     apiGet<Paginated<AlbumSearchItem>>("/api/search/albums", {
       query,
       page,
       limit,
-    }),
+    }, options),
   );
 }
 
-export function searchArtists(query: string, page = 0, limit = 20) {
+export function searchArtists(query: string, page = 0, limit = 20, options?: FetchOptions) {
   return catalogSearch(() =>
     apiGet<Paginated<ArtistSearchItem>>("/api/search/artists", {
       query,
       page,
       limit,
-    }),
+    }, options),
   );
 }
 
-export function searchPlaylists(query: string, page = 0, limit = 20) {
+export function searchPlaylists(query: string, page = 0, limit = 20, options?: FetchOptions) {
   return catalogSearch(() =>
     apiGet<Paginated<PlaylistSearchItem>>("/api/search/playlists", {
       query,
       page,
       limit,
-    }),
+    }, options),
   );
 }
 
-export function getSong(id: string) {
+export function getSong(id: string, options?: FetchOptions) {
   return networkFirst(
-    () => apiGet<Song>(`/api/songs/${id}`),
+    () => apiGet<Song>(`/api/songs/${id}`, {}, options),
     () => getCachedSong(id),
     (song) => cacheSongMetadata(song),
   );
 }
 
-export function getSuggestions(id: string, limit = 10) {
-  return apiGet<Song[]>(`/api/songs/${id}/suggestions`, { limit });
+export function getSuggestions(id: string, limit = 10, options?: FetchOptions) {
+  return apiGet<Song[]>(`/api/songs/${id}/suggestions`, { limit }, options);
 }
 
-export function getAlbum(id: string) {
+export function getAlbum(id: string, options?: FetchOptions) {
   return networkFirst(
-    () => apiGet<Album>(`/api/albums/${id}`),
+    () => apiGet<Album>(`/api/albums/${id}`, {}, options),
     () => getCachedAlbum(id),
     (album) => cacheAlbumMetadata(album),
   );
 }
 
-export function getArtist(id: string) {
+export function getArtist(id: string, options?: FetchOptions) {
   return networkFirst(
-    () => apiGet<Artist>(`/api/artists/${id}`),
+    () => apiGet<Artist>(`/api/artists/${id}`, {}, options),
     () => getCachedArtist(id),
     (artist) => cacheArtistMetadata(artist),
   );
 }
 
-export function getArtistSongs(id: string, page = 0) {
-  return apiGet<ArtistSongsPage>(`/api/artists/${id}/songs`, { page });
+export function getArtistSongs(id: string, page = 0, options?: FetchOptions) {
+  return apiGet<ArtistSongsPage>(`/api/artists/${id}/songs`, { page }, options);
 }
 
-export function getArtistAlbums(id: string, page = 0) {
-  return apiGet<ArtistAlbumsPage>(`/api/artists/${id}/albums`, { page });
+export function getArtistAlbums(id: string, page = 0, options?: FetchOptions) {
+  return apiGet<ArtistAlbumsPage>(`/api/artists/${id}/albums`, { page }, options);
 }
 
-export function getPlaylist(id: string) {
+export function getPlaylist(id: string, options?: FetchOptions) {
   return networkFirst(
-    () => apiGet<Playlist>(`/api/playlists/${id}`),
+    () => apiGet<Playlist>(`/api/playlists/${id}`, {}, options),
     () => getCachedPlaylist(id),
     (playlist) => cachePlaylistMetadata(playlist),
   );
 }
 
-export async function getLyrics(query: LyricsQuery, songId?: string) {
+export async function getLyrics(query: LyricsQuery, songId?: string, options?: FetchOptions) {
   const cacheKey = songId?.trim() || `${query.title}|${query.artist}`.toLowerCase();
   const cached = await getCachedLyrics(cacheKey);
   const cachedMatchesQuery = Boolean(
@@ -173,7 +180,7 @@ export async function getLyrics(query: LyricsQuery, songId?: string) {
         album: query.album ?? undefined,
         duration: query.duration ?? undefined,
       },
-      { cache: "no-store" },
+      { cache: "no-store", signal: options?.signal },
     );
     const matches =
       !result.found ||
@@ -193,6 +200,7 @@ export async function getLyrics(query: LyricsQuery, songId?: string) {
     void cacheLyrics(cacheKey, tagged);
     return tagged;
   } catch (error) {
+    if (isAbortError(error)) throw error;
     if (cached && cachedMatchesQuery && shouldUseCacheFallback(error)) {
       return { ...cached.result, songId: cacheKey };
     }

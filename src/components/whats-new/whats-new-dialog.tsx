@@ -133,7 +133,7 @@ function WhatsNewDialog({
             </section>
           ))}
         </div>
-        <DialogFooter className="border-0 bg-transparent p-0 sm:justify-end">
+        <DialogFooter className="border-0 bg-transparent p-1 sm:p-2 sm:justify-end">
           <Button className="rounded-full" onClick={() => onOpenChange(false)}>
             got it
           </Button>

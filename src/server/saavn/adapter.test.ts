@@ -131,5 +131,23 @@ describe("getArtistSongs catalog filtering", () => {
       String(call[0]).includes("/api/search/songs"),
     );
     expect(searchCalls.length).toBeGreaterThan(1);
+    expect(searchCalls.length).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("saavn rate limits", () => {
+  it("does not retry or map a 429 as a generic failure", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ success: false, message: "Too many requests" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(searchSongs("Believer")).rejects.toMatchObject({
+      code: "SAAVN_RATE_LIMITED",
+      status: 429,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

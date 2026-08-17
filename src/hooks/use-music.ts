@@ -4,69 +4,65 @@ import { useQuery } from "@tanstack/react-query";
 import * as musicApi from "@/lib/api/music";
 import { shouldUseCacheFallback } from "@/lib/offline/cache-policy";
 import { findLocalSong } from "@/lib/offline/local-library";
+import { shouldRetryQuery } from "@/lib/api/retry";
 import { queryKeys } from "@/lib/query-keys";
 
-const searchOptions = {
-  enabled: false as boolean,
-  staleTime: 60_000,
-  retry: 1,
-};
-
-export function useGlobalSearch(query: string) {
+export function useGlobalSearch(query: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.searchAll(query),
-    queryFn: () => musicApi.searchAll(query),
-    enabled: query.length > 0,
+    queryFn: ({ signal }) => musicApi.searchAll(query, { signal }),
+    enabled: enabled && query.length > 0,
     staleTime: 60_000,
-    retry: 1,
+    retry: shouldRetryQuery,
   });
 }
 
-export function useSongSearch(query: string) {
+export function useSongSearch(query: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.searchSongs(query),
-    queryFn: () => musicApi.searchSongs(query),
-    enabled: query.length > 0,
+    queryFn: ({ signal }) => musicApi.searchSongs(query, 0, 20, { signal }),
+    enabled: enabled && query.length > 0,
     staleTime: 60_000,
-    retry: 1,
+    retry: shouldRetryQuery,
   });
 }
 
-export function useAlbumSearch(query: string) {
+export function useAlbumSearch(query: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.searchAlbums(query),
-    queryFn: () => musicApi.searchAlbums(query),
-    ...searchOptions,
-    enabled: query.length > 0,
+    queryFn: ({ signal }) => musicApi.searchAlbums(query, 0, 20, { signal }),
+    enabled: enabled && query.length > 0,
+    staleTime: 60_000,
+    retry: shouldRetryQuery,
   });
 }
 
-export function useArtistSearch(query: string) {
+export function useArtistSearch(query: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.searchArtists(query),
-    queryFn: () => musicApi.searchArtists(query),
-    enabled: query.length > 0,
+    queryFn: ({ signal }) => musicApi.searchArtists(query, 0, 20, { signal }),
+    enabled: enabled && query.length > 0,
     staleTime: 60_000,
-    retry: 1,
+    retry: shouldRetryQuery,
   });
 }
 
-export function usePlaylistSearch(query: string) {
+export function usePlaylistSearch(query: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.searchPlaylists(query),
-    queryFn: () => musicApi.searchPlaylists(query),
-    enabled: query.length > 0,
+    queryFn: ({ signal }) => musicApi.searchPlaylists(query, 0, 20, { signal }),
+    enabled: enabled && query.length > 0,
     staleTime: 60_000,
-    retry: 1,
+    retry: shouldRetryQuery,
   });
 }
 
 export function useSong(id: string) {
   return useQuery({
     queryKey: queryKeys.song(id),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
-        return await musicApi.getSong(id);
+        return await musicApi.getSong(id, { signal });
       } catch (error) {
         if (shouldUseCacheFallback(error)) {
           const local = findLocalSong(id);
@@ -77,14 +73,14 @@ export function useSong(id: string) {
     },
     enabled: Boolean(id),
     staleTime: 5 * 60_000,
-    retry: 1,
+    retry: shouldRetryQuery,
   });
 }
 
 export function useSuggestions(id: string) {
   return useQuery({
     queryKey: queryKeys.suggestions(id),
-    queryFn: () => musicApi.getSuggestions(id),
+    queryFn: ({ signal }) => musicApi.getSuggestions(id, 10, { signal }),
     enabled: Boolean(id),
     staleTime: 5 * 60_000,
     retry: 0,
@@ -94,30 +90,30 @@ export function useSuggestions(id: string) {
 export function useAlbum(id: string) {
   return useQuery({
     queryKey: queryKeys.album(id),
-    queryFn: () => musicApi.getAlbum(id),
+    queryFn: ({ signal }) => musicApi.getAlbum(id, { signal }),
     enabled: Boolean(id),
     staleTime: 5 * 60_000,
-    retry: 1,
+    retry: shouldRetryQuery,
   });
 }
 
 export function useArtist(id: string) {
   return useQuery({
     queryKey: queryKeys.artist(id),
-    queryFn: () => musicApi.getArtist(id),
+    queryFn: ({ signal }) => musicApi.getArtist(id, { signal }),
     enabled: Boolean(id),
     staleTime: 5 * 60_000,
-    retry: 1,
+    retry: shouldRetryQuery,
   });
 }
 
 export function usePlaylist(id: string) {
   return useQuery({
     queryKey: queryKeys.playlist(id),
-    queryFn: () => musicApi.getPlaylist(id),
+    queryFn: ({ signal }) => musicApi.getPlaylist(id, { signal }),
     enabled: Boolean(id),
     staleTime: 5 * 60_000,
-    retry: 1,
+    retry: shouldRetryQuery,
   });
 }
 
@@ -132,7 +128,7 @@ export function useLyrics(song: {
     queryKey: queryKeys.lyrics(
       song ?? { id: "__idle__", name: "", artist: "" },
     ),
-    queryFn: ({ queryKey }) => {
+    queryFn: ({ queryKey, signal }) => {
       const [, id, name, artist, album, duration] = queryKey;
       return musicApi.getLyrics(
         {
@@ -142,11 +138,12 @@ export function useLyrics(song: {
           duration: typeof duration === "number" ? duration : null,
         },
         id,
+        { signal },
       );
     },
     enabled: Boolean(song?.id && song.name && song.artist),
     staleTime: 30 * 60_000,
-    retry: 1,
+    retry: shouldRetryQuery,
     placeholderData: undefined,
   });
 }

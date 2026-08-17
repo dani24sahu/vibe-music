@@ -1,4 +1,4 @@
-import { SaavnError, SaavnNotFoundError, SaavnUnavailableError } from "./errors";
+import { SaavnError, SaavnNotFoundError, SaavnRateLimitedError, SaavnUnavailableError } from "./errors";
 import type { SaavnEnvelope } from "./types";
 
 function getBaseUrl() {
@@ -43,6 +43,9 @@ export async function saavnFetch<T>(
 
     if (response.status === 404) {
       throw new SaavnNotFoundError();
+    }
+    if (response.status === 429) {
+      throw new SaavnRateLimitedError();
     }
 
     let payload: SaavnEnvelope<T> | null = null;

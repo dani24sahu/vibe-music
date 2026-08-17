@@ -19,11 +19,14 @@ import {
 } from "@/hooks/use-music";
 import { getSong } from "@/lib/api/music";
 
+type SearchTab = "all" | "songs" | "albums" | "artists" | "playlists";
+
 function SearchPageInner() {
   const params = useSearchParams();
   const router = useRouter();
   const initial = params.get("q") ?? "";
   const [value, setValue] = useState(initial);
+  const [tab, setTab] = useState<SearchTab>("all");
   const query = useDebouncedValue(value.trim(), 350);
   const { play } = usePlayback();
 
@@ -32,11 +35,11 @@ function SearchPageInner() {
     router.replace(next, { scroll: false });
   }, [query, router]);
 
-  const global = useGlobalSearch(query);
-  const songs = useSongSearch(query);
-  const albums = useAlbumSearch(query);
-  const artists = useArtistSearch(query);
-  const playlists = usePlaylistSearch(query);
+  const global = useGlobalSearch(query, tab === "all");
+  const songs = useSongSearch(query, tab === "songs");
+  const albums = useAlbumSearch(query, tab === "albums");
+  const artists = useArtistSearch(query, tab === "artists");
+  const playlists = usePlaylistSearch(query, tab === "playlists");
 
   const isEmpty = query.length === 0;
 
@@ -59,7 +62,7 @@ function SearchPageInner() {
           description="Search the catalog for songs, albums, artists, and playlists."
         />
       ) : (
-        <Tabs defaultValue="all">
+        <Tabs value={tab} onValueChange={(next) => setTab(next as SearchTab)}>
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="songs">Songs</TabsTrigger>

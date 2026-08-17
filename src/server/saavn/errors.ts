@@ -23,3 +23,10 @@ export class SaavnNotFoundError extends SaavnError {
     this.name = "SaavnNotFoundError";
   }
 }
+
+export class SaavnRateLimitedError extends SaavnError {
+  constructor(message = "The music catalog is busy. Try again in a moment.") {
+    super(message, 429, "SAAVN_RATE_LIMITED");
+    this.name = "SaavnRateLimitedError";
+  }
+}

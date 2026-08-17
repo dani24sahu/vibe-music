@@ -1,8 +1,8 @@
 import type { SaavnAlbum, SaavnArtistAlbums, SaavnArtistSongs, SaavnPaginated, SaavnSong } from "./types";
 import type { AlbumSearchItem, ArtistRef, Song } from "@/types/music";
 
-export const ARTIST_CATALOG_SEARCH_PAGE_SIZE = 50;
-export const ARTIST_CATALOG_MAX_SEARCH_PAGES = 8;
+export const ARTIST_CATALOG_SEARCH_PAGE_SIZE = 20;
+export const ARTIST_CATALOG_MAX_SEARCH_PAGES = 3;
 
 const NON_PERFORMING_ROLES = new Set([
   "music",

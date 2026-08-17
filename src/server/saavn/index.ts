@@ -13,5 +13,5 @@ export {
   searchPlaylists,
   searchSongs,
 } from "./adapter";
-export { SaavnError, SaavnNotFoundError, SaavnUnavailableError } from "./errors";
+export { SaavnError, SaavnNotFoundError, SaavnRateLimitedError, SaavnUnavailableError } from "./errors";
 export { pickArtworkUrl, pickPlaybackUrl, primaryArtistName } from "./mappers";

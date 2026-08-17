@@ -9,7 +9,7 @@ import {
   pickSongsForArtist,
   songBelongsToArtist,
 } from "./catalog";
-import { SaavnNotFoundError } from "./errors";
+import { SaavnNotFoundError, SaavnRateLimitedError } from "./errors";
 import {
   mapAlbum,
   mapAlbumSearchItem,
@@ -149,7 +149,8 @@ export async function getSong(id: string): Promise<Song> {
       throw new SaavnNotFoundError("Song not found.");
     }
     return mapSong(song);
-  } catch {
+  } catch (error) {
+    if (error instanceof SaavnRateLimitedError) throw error;
     const data = await saavnFetch<SaavnSong[] | SaavnSong>("/api/songs", { ids: id });
     const song = Array.isArray(data) ? data[0] : data;
     if (!song?.id) {
@@ -197,7 +198,8 @@ export async function getArtistSongs(
     });
     dedicated = mapSongs(extractArtistSongs(data));
     dedicatedTotal = data.total ?? dedicated.length;
-  } catch {
+  } catch (error) {
+    if (error instanceof SaavnRateLimitedError) throw error;
     dedicated = [];
   }
 
@@ -266,7 +268,8 @@ export async function getArtistAlbums(
     });
     dedicated = extractArtistAlbums(data).map(mapAlbum);
     dedicatedTotal = data.total ?? dedicated.length;
-  } catch {
+  } catch (error) {
+    if (error instanceof SaavnRateLimitedError) throw error;
     dedicated = [];
   }
 
@@ -349,6 +352,12 @@ export async function getArtist(
   const artist = mapArtist(data);
   const songCount = options.songCount ?? 10;
   const albumCount = options.albumCount ?? 10;
+  const fallbackOptions = {
+    page: options.page ?? 0,
+    sortBy: options.sortBy,
+    sortOrder: options.sortOrder,
+    artistName: artist.name,
+  };
 
   artist.topSongs = pickSongsForArtist(artist.topSongs, id, songCount, artist.name);
   artist.topAlbums = artist.topAlbums
@@ -359,26 +368,16 @@ export async function getArtist(
   // even when songCount/albumCount are set. Dedicated song/album endpoints currently
   // return `{ total: 0, songs: [] }` for many Western artists, so fall back to
   // documented search plus artist-credit filtering.
-  if (artist.topSongs.length === 0) {
-    const songs = await getArtistSongs(id, {
-      page: options.page ?? 0,
-      sortBy: options.sortBy,
-      sortOrder: options.sortOrder,
-      artistName: artist.name,
-      limit: songCount,
-    });
-    artist.topSongs = songs.songs;
-  }
-  if (artist.topAlbums.length === 0) {
-    const albums = await getArtistAlbums(id, {
-      page: options.page ?? 0,
-      sortBy: options.sortBy,
-      sortOrder: options.sortOrder,
-      artistName: artist.name,
-      limit: albumCount,
-    });
-    artist.topAlbums = albums.albums;
-  }
+  const [songs, albums] = await Promise.all([
+    artist.topSongs.length === 0
+      ? getArtistSongs(id, { ...fallbackOptions, limit: songCount })
+      : Promise.resolve({ songs: artist.topSongs }),
+    artist.topAlbums.length === 0
+      ? getArtistAlbums(id, { ...fallbackOptions, limit: albumCount })
+      : Promise.resolve({ albums: artist.topAlbums }),
+  ]);
+  artist.topSongs = songs.songs;
+  artist.topAlbums = albums.albums;
 
   return artist;
 }
@@ -407,7 +406,8 @@ export async function getSuggestions(
       limit,
     });
     return mapSongs(Array.isArray(data) ? data : []);
-  } catch {
+  } catch (error) {
+    if (error instanceof SaavnRateLimitedError) throw error;
     // Live discrepancy: `/api/songs/{id}/suggestions` currently fails on the
     // public instance with "Cannot read properties of undefined (reading 'id')".
     // Fall back to songs from the same primary artist.

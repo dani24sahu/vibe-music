@@ -13,7 +13,7 @@ export class MusicApiError extends Error {
 export async function apiGet<T>(
   path: string,
   query: Record<string, string | number | undefined> = {},
-  options?: { cache?: RequestCache },
+  options?: { cache?: RequestCache; signal?: AbortSignal },
 ): Promise<T> {
   const url = new URL(path, window.location.origin);
   for (const [key, value] of Object.entries(query)) {
@@ -26,8 +26,10 @@ export async function apiGet<T>(
     response = await fetch(url.toString(), {
       headers: { Accept: "application/json" },
       cache: options?.cache,
+      signal: options?.signal,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") throw error;
     throw new MusicApiError(
       "Could not reach the local music API.",
       503,
