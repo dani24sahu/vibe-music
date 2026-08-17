@@ -207,6 +207,40 @@
   .safe-bottom {
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   }
+
+  .lyrics-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--foreground) 32%, transparent) transparent;
+  }
+
+  .lyrics-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .lyrics-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .lyrics-scroll::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    background: color-mix(in oklch, var(--foreground) 22%, transparent);
+  }
+
+  .lyrics-scroll:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--foreground) 42%, transparent);
+  }
+
+  .lyrics-scroll-on-dark {
+    scrollbar-color: rgb(255 255 255 / 0.28) transparent;
+  }
+
+  .lyrics-scroll-on-dark::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.22);
+  }
+
+  .lyrics-scroll-on-dark:hover::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.4);
+  }
 }
 
 @keyframes page-enter {
@@ -329,6 +363,18 @@
 
 .play-glow {
   animation: pulse-glow 2.2s ease-in-out infinite;
+}
+
+@media (pointer: coarse) {
+  .lyrics-scroll {
+    scrollbar-width: none;
+  }
+
+  .lyrics-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

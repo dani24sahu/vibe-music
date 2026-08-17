@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { LocateFixed } from "lucide-react";
 import { activeLyricIndex } from "@/lib/player/lyrics";
 import { cn } from "@/lib/utils";
 import type { LyricsResult } from "@/types/lyrics";
@@ -27,23 +28,47 @@ export function SyncedLyrics({
   className?: string;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const activeRef = useRef<HTMLButtonElement | null>(null);
+  const lineRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const activeIndexRef = useRef(-1);
   const programmatic = useRef(false);
-  const resumeAt = useRef(0);
+  const [unfollowed, setUnfollowed] = useState(false);
   const activeIndex = lyrics?.synced ? activeLyricIndex(lyrics.lines, currentTime) : -1;
   const dark = tone === "dark";
+  const canFollow = Boolean(follow && lyrics?.synced && activeIndex >= 0);
+  activeIndexRef.current = activeIndex;
+
+  function scrollToActive(smooth = false) {
+    const scroller = scrollerRef.current;
+    const node = lineRefs.current[activeIndexRef.current];
+    if (!scroller || !node || scroller.clientHeight < 32) return;
+    const target =
+      scroller.scrollTop +
+      (node.getBoundingClientRect().top - scroller.getBoundingClientRect().top) -
+      scroller.clientHeight / 2 +
+      node.getBoundingClientRect().height / 2;
+    programmatic.current = true;
+    scroller.scrollTo({
+      top: Math.max(0, target),
+      behavior: smooth ? "smooth" : "auto",
+    });
+    window.setTimeout(() => {
+      programmatic.current = false;
+    }, smooth ? 320 : 50);
+  }
+
+  function detachFromFollow() {
+    if (!lyrics?.synced || unfollowed) return;
+    setUnfollowed(true);
+  }
 
   useEffect(() => {
-    if (!follow || activeIndex < 0 || Date.now() < resumeAt.current) return;
-    const node = activeRef.current;
-    if (!node) return;
-    programmatic.current = true;
-    node.scrollIntoView({ block: "center", behavior: "smooth" });
-    const timer = window.setTimeout(() => {
-      programmatic.current = false;
-    }, 400);
-    return () => window.clearTimeout(timer);
-  }, [activeIndex, follow]);
+    setUnfollowed(false);
+  }, [lyrics?.songId]);
+
+  useEffect(() => {
+    if (!canFollow || unfollowed) return;
+    scrollToActive(false);
+  }, [activeIndex, canFollow, unfollowed]);
 
   if (isLoading) {
     return (
@@ -92,49 +117,77 @@ export function SyncedLyrics({
   }
 
   return (
-    <div
-      ref={scrollerRef}
-      className={cn("h-full min-h-0 overflow-y-auto px-1", className)}
-      onScroll={() => {
-        if (programmatic.current) return;
-        resumeAt.current = Date.now() + 4000;
-      }}
-    >
-      <div className="flex flex-col gap-4 py-[28%] sm:gap-5">
-        {lyrics.lines.map((line, index) => {
-          const active = lyrics.synced && index === activeIndex;
-          const time = line.time;
-          const canSeek = Boolean(onSeek && time !== null);
-          return (
-            <button
-              key={`${line.time ?? "u"}-${index}`}
-              ref={active ? (node) => {
-                activeRef.current = node;
-              } : undefined}
-              type="button"
-              disabled={!canSeek}
-              onClick={() => {
-                if (time === null || !onSeek) return;
-                resumeAt.current = 0;
-                onSeek(time);
-              }}
-              className={cn(
-                "block w-full text-left text-pretty transition-all duration-300",
-                canSeek ? "cursor-pointer" : "cursor-default",
-                active
-                  ? dark
-                    ? "font-display text-2xl font-bold text-white sm:text-3xl"
-                    : "font-display text-2xl font-bold text-foreground sm:text-3xl"
-                  : dark
-                    ? "text-lg text-white/40 hover:text-white/75 sm:text-xl"
-                    : "text-lg text-muted-foreground hover:text-foreground sm:text-xl",
-              )}
-            >
-              {line.text}
-            </button>
-          );
-        })}
+    <div className={cn("relative flex h-full min-h-0 flex-1 flex-col overflow-hidden", className)}>
+      <div
+        ref={scrollerRef}
+        className={cn(
+          "lyrics-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-1",
+          dark && "lyrics-scroll-on-dark",
+        )}
+        onWheel={detachFromFollow}
+        onTouchMove={detachFromFollow}
+        onScroll={() => {
+          if (programmatic.current || !lyrics.synced) return;
+          detachFromFollow();
+        }}
+      >
+        <div className="flex flex-col gap-4 py-[28%] sm:gap-5">
+          {lyrics.lines.map((line, index) => {
+            const active = lyrics.synced && index === activeIndex;
+            const time = line.time;
+            const canSeek = Boolean(onSeek && time !== null);
+            return (
+              <button
+                key={`${line.time ?? "u"}-${index}`}
+                ref={(node) => {
+                  lineRefs.current[index] = node;
+                }}
+                type="button"
+                disabled={!canSeek}
+                onClick={() => {
+                  if (time === null || !onSeek) return;
+                  setUnfollowed(false);
+                  onSeek(time);
+                  requestAnimationFrame(() => scrollToActive(true));
+                }}
+                className={cn(
+                  "block w-full text-left text-pretty transition-all duration-300",
+                  canSeek ? "cursor-pointer" : "cursor-default",
+                  active
+                    ? dark
+                      ? "font-display text-2xl font-bold text-white sm:text-3xl"
+                      : "font-display text-2xl font-bold text-foreground sm:text-3xl"
+                    : dark
+                      ? "text-lg text-white/40 hover:text-white/75 sm:text-xl"
+                      : "text-lg text-muted-foreground hover:text-foreground sm:text-xl",
+                )}
+              >
+                {line.text}
+              </button>
+            );
+          })}
+        </div>
       </div>
+      {unfollowed && lyrics.synced ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              setUnfollowed(false);
+              requestAnimationFrame(() => scrollToActive(true));
+            }}
+            className={cn(
+              "pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold shadow-lg",
+              dark
+                ? "bg-white text-black hover:bg-white/90"
+                : "bg-foreground text-background hover:bg-foreground/90",
+            )}
+          >
+            <LocateFixed className="size-4" aria-hidden />
+            Sync
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

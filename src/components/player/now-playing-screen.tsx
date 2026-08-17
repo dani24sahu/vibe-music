@@ -123,7 +123,7 @@ export function NowPlayingScreen() {
   }, [router]);
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-black text-white">
+    <div className="relative h-dvh overflow-hidden bg-black text-white">
       {backdrop ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -134,8 +134,8 @@ export function NowPlayingScreen() {
       ) : null}
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/55 to-black/90" />
 
-      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-lg flex-col px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-xl sm:px-8">
-        <header className="flex items-center gap-3">
+      <div className="relative z-10 mx-auto flex h-dvh w-full max-w-lg flex-col px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-xl sm:px-8">
+        <header className="flex shrink-0 items-center gap-3">
           <Button
             size="icon"
             variant="ghost"
@@ -195,7 +195,7 @@ export function NowPlayingScreen() {
         <div
           className={cn(
             "flex min-h-0 flex-1 flex-col",
-            showLyrics ? "py-3" : "justify-center py-6",
+            showLyrics ? "min-h-0 flex-1 overflow-hidden py-3" : "justify-center py-6",
           )}
         >
           {showLyrics ? (
