@@ -41,11 +41,12 @@ export function NowPlayingSeek({
   playingRef.current = isPlaying;
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const wrap = wrapRef.current;
-    if (!canvas || !wrap) return;
+    if (!canvasRef.current || !wrapRef.current) return;
+    const canvas: HTMLCanvasElement = canvasRef.current;
+    const wrap: HTMLDivElement = wrapRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    const context: CanvasRenderingContext2D = ctx;
 
     const reduced = prefersReducedMotion();
     let frame = 0;
@@ -61,17 +62,17 @@ export function NowPlayingSeek({
         canvas.style.width = `${next}px`;
         canvas.style.height = `${HEIGHT}px`;
       }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
       return cssWidth;
     }
 
     function drawPath(width: number, phase: number, amp: number) {
       const mid = HEIGHT / 2;
-      ctx.beginPath();
+      context.beginPath();
       for (let x = 0; x <= width; x += 1) {
         const y = waveY(x, width, mid, amp, phase);
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        if (x === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
       }
     }
 
@@ -87,38 +88,38 @@ export function NowPlayingSeek({
       const phase = playingRef.current && !reduced ? performance.now() / 900 : 0;
       const amp = HEIGHT * (playingRef.current && !reduced ? 0.28 : 0.2);
 
-      ctx.clearRect(0, 0, width, HEIGHT);
-      ctx.lineWidth = LINE_WIDTH;
-      ctx.lineJoin = "round";
-      ctx.lineCap = "round";
+      context.clearRect(0, 0, width, HEIGHT);
+      context.lineWidth = LINE_WIDTH;
+      context.lineJoin = "round";
+      context.lineCap = "round";
 
       // Remaining (dim)
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(playhead, 0, width - playhead, HEIGHT);
-      ctx.clip();
+      context.save();
+      context.beginPath();
+      context.rect(playhead, 0, width - playhead, HEIGHT);
+      context.clip();
       drawPath(width, phase, amp);
-      ctx.strokeStyle = "rgba(255,255,255,0.28)";
-      ctx.stroke();
-      ctx.restore();
+      context.strokeStyle = "rgba(255,255,255,0.28)";
+      context.stroke();
+      context.restore();
 
       // Played (bright)
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, playhead, HEIGHT);
-      ctx.clip();
+      context.save();
+      context.beginPath();
+      context.rect(0, 0, playhead, HEIGHT);
+      context.clip();
       drawPath(width, phase, amp);
-      ctx.strokeStyle = "rgba(255,255,255,0.95)";
-      ctx.stroke();
-      ctx.restore();
+      context.strokeStyle = "rgba(255,255,255,0.95)";
+      context.stroke();
+      context.restore();
 
       // Playhead dot on the wave
       const mid = HEIGHT / 2;
       const y = waveY(playhead, width, mid, amp, phase);
-      ctx.beginPath();
-      ctx.arc(playhead, y, 3.5, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
+      context.beginPath();
+      context.arc(playhead, y, 3.5, 0, Math.PI * 2);
+      context.fillStyle = "#ffffff";
+      context.fill();
 
       frame = requestAnimationFrame(paint);
     }
