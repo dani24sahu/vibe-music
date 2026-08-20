@@ -4,6 +4,7 @@ import {
   nextIndex,
   previousIndex,
   shuffledWithCurrentFirst,
+  upcomingFromQueue,
 } from "@/lib/player/queue";
 
 describe("queue helpers", () => {
@@ -34,5 +35,11 @@ describe("queue helpers", () => {
     expect(shuffled[0]).toBe("c");
     expect(shuffled).toHaveLength(4);
     expect(new Set(shuffled)).toEqual(new Set(items));
+  });
+
+  it("peeks upcoming tracks without wrapping", () => {
+    expect(upcomingFromQueue(["a", "b", "c", "d"], 1, 2)).toEqual(["c", "d"]);
+    expect(upcomingFromQueue(["a", "b"], 1, 2)).toEqual([]);
+    expect(upcomingFromQueue(["a"], 0, 2)).toEqual([]);
   });
 });

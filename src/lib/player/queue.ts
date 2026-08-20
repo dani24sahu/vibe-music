@@ -38,3 +38,13 @@ export function cycleRepeat(mode: "off" | "all" | "one"): "off" | "all" | "one" 
   if (mode === "all") return "one";
   return "off";
 }
+
+export function upcomingFromQueue<T>(items: T[], currentIndex: number, count = 2): T[] {
+  if (items.length <= 1 || count <= 0) return [];
+  const next: T[] = [];
+  for (let index = currentIndex + 1; index < items.length && next.length < count; index += 1) {
+    const item = items[index];
+    if (item !== undefined) next.push(item);
+  }
+  return next;
+}

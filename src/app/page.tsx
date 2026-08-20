@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { StationCoverFan } from "@/components/home/station-cover-fan";
 import { MadeBy } from "@/components/layout/made-by";
 import { MediaCard } from "@/components/media/media-card";
 import { SongRow } from "@/components/media/song-row";
@@ -55,7 +56,8 @@ export default function HomePage() {
                 : "Search it. Queue it. Loop it. Your player, your night."}
           </p>
           {plan.canPlay ? (
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              <StationCoverFan songs={plan.seeds} />
               <button
                 type="button"
                 onClick={() => void playStation()}

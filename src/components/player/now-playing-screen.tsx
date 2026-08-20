@@ -21,10 +21,11 @@ import {
   VolumeX,
 } from "lucide-react";
 import { AddToPlaylistDialog } from "@/components/library/add-to-playlist-dialog";
-import { Artwork } from "@/components/media/artwork";
 import { AudioQualitySelector } from "@/components/player/audio-quality-selector";
+import { CueCardStack } from "@/components/player/cue-card-stack";
 import { EqSheet } from "@/components/player/eq-sheet";
 import { NowPlayingLyricLine } from "@/components/player/now-playing-lyric";
+import { NowPlayingSeek } from "@/components/player/now-playing-seek";
 import { QueueSheet } from "@/components/player/queue-sheet";
 import { SyncedLyrics } from "@/components/player/synced-lyrics";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Slider } from "@/components/ui/slider";
-import { bestArtwork, formatTime, primaryArtistName } from "@/lib/format";
+import { bestArtwork, primaryArtistName } from "@/lib/format";
 import { lyricsForSong } from "@/lib/player/lyrics";
 import { cn } from "@/lib/utils";
 import { useLyrics } from "@/hooks/use-music";
@@ -45,6 +46,8 @@ import { currentSong, usePlayerStore } from "@/stores/player-store";
 export function NowPlayingScreen() {
   const router = useRouter();
   const song = usePlayerStore(currentSong);
+  const queue = usePlayerStore((state) => state.queue);
+  const currentIndex = usePlayerStore((state) => state.currentIndex);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const isBuffering = usePlayerStore((state) => state.isBuffering);
   const shuffle = usePlayerStore((state) => state.shuffle);
@@ -211,12 +214,10 @@ export function NowPlayingScreen() {
               onRetry={() => void lyrics.refetch()}
             />
           ) : (
-            <Artwork
-              images={song?.image ?? []}
-              alt={song?.name ?? "No track"}
-              size="lg"
-              rounded="rounded-2xl"
-              className="mx-auto block aspect-square w-full max-w-[min(100%,28rem)] shadow-2xl shadow-black/50"
+            <CueCardStack
+              queue={queue}
+              currentIndex={currentIndex}
+              isPlaying={isPlaying}
             />
           )}
         </div>
@@ -268,23 +269,13 @@ export function NowPlayingScreen() {
               </Button>
             </div>
 
-            <div className="mt-6">
-              <Slider
-                min={0}
-                max={maxTime}
-                value={[currentTime]}
-                onValueChange={(value) => {
-                  const nextValue = Array.isArray(value) ? value[0] : value;
-                  seek(Number(nextValue ?? 0));
-                }}
-                aria-label="Seek"
-                className="[&_[data-slot=slider-track]]:bg-white/25 [&_[data-slot=slider-range]]:bg-white [&_[data-slot=slider-thumb]]:size-3.5"
-              />
-              <div className="mt-2 flex justify-between text-xs tabular-nums text-white/70">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration || song.duration || 0)}</span>
-              </div>
-            </div>
+            <NowPlayingSeek
+              currentTime={currentTime}
+              duration={duration || song.duration || 0}
+              maxTime={maxTime}
+              isPlaying={isPlaying}
+              onSeek={seek}
+            />
 
             <div className="mt-4 flex items-center justify-between">
               <Button

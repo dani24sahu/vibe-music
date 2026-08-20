@@ -11,6 +11,7 @@ import {
   resolveAudioSource,
 } from "@/lib/player/audio-source";
 import { applyEqGains, createEqFilters, type EqGains } from "@/lib/player/eq";
+import { setPlaybackAnalyser } from "@/lib/player/playback-analyser";
 import { currentSong, usePlayerStore } from "@/stores/player-store";
 import { useLibraryStore } from "@/stores/library-store";
 
@@ -18,18 +19,85 @@ type EqGraph = {
   ctx: AudioContext;
   filters: BiquadFilterNode[];
   gain: GainNode;
+  analyser: AnalyserNode;
 };
 
+const GRAPH_KEY = Symbol.for("vibe.eqGraph");
+const FALLBACK_KEY = Symbol.for("vibe.waveAnalyser");
 const eqGraphs = new WeakMap<HTMLAudioElement, EqGraph>();
+
+type AudioWithGraph = HTMLAudioElement & {
+  [GRAPH_KEY]?: EqGraph;
+  [FALLBACK_KEY]?: { ctx: AudioContext; analyser: AnalyserNode };
+};
 
 function audioContextCtor() {
   const scoped = window as typeof window & { webkitAudioContext?: typeof AudioContext };
   return window.AudioContext ?? scoped.webkitAudioContext;
 }
 
+function readStoredGraph(audio: HTMLAudioElement) {
+  return eqGraphs.get(audio) ?? (audio as AudioWithGraph)[GRAPH_KEY] ?? null;
+}
+
+function storeGraph(audio: HTMLAudioElement, graph: EqGraph) {
+  eqGraphs.set(audio, graph);
+  (audio as AudioWithGraph)[GRAPH_KEY] = graph;
+}
+
+function createAnalyser(ctx: AudioContext) {
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 1024;
+  analyser.smoothingTimeConstant = 0.35;
+  return analyser;
+}
+
+function tapAnalyser(graph: EqGraph): EqGraph {
+  const analyser = graph.analyser ?? createAnalyser(graph.ctx);
+  analyser.fftSize = 1024;
+  analyser.smoothingTimeConstant = 0.35;
+  try {
+    graph.gain.connect(analyser);
+  } catch {
+    // Already connected as a tap.
+  }
+  return { ...graph, analyser };
+}
+
+function tapCaptureStream(audio: HTMLAudioElement): AnalyserNode | null {
+  const existing = (audio as AudioWithGraph)[FALLBACK_KEY];
+  if (existing && existing.ctx.state !== "closed") {
+    void existing.ctx.resume();
+    return existing.analyser;
+  }
+  const capture = (
+    audio as HTMLAudioElement & {
+      captureStream?: () => MediaStream;
+    }
+  ).captureStream;
+  const Ctx = audioContextCtor();
+  if (!Ctx || typeof capture !== "function") return null;
+  try {
+    const ctx = new Ctx();
+    const source = ctx.createMediaStreamSource(capture.call(audio));
+    const analyser = createAnalyser(ctx);
+    source.connect(analyser);
+    void ctx.resume();
+    (audio as AudioWithGraph)[FALLBACK_KEY] = { ctx, analyser };
+    return analyser;
+  } catch {
+    return null;
+  }
+}
+
 function connectEqGraph(audio: HTMLAudioElement): EqGraph | null {
-  const existing = eqGraphs.get(audio);
-  if (existing && existing.ctx.state !== "closed") return existing;
+  const existing = readStoredGraph(audio);
+  if (existing && existing.ctx.state !== "closed") {
+    const next = tapAnalyser(existing);
+    storeGraph(audio, next);
+    setPlaybackAnalyser(next.analyser);
+    return next;
+  }
 
   const Ctx = audioContextCtor();
   if (!Ctx) return null;
@@ -51,11 +119,25 @@ function connectEqGraph(audio: HTMLAudioElement): EqGraph | null {
     }
     last.connect(gain);
     gain.connect(ctx.destination);
-    const graph = { ctx, filters, gain };
-    eqGraphs.set(audio, graph);
+    const graph = tapAnalyser({
+      ctx,
+      filters,
+      gain,
+      analyser: createAnalyser(ctx),
+    });
+    storeGraph(audio, graph);
+    setPlaybackAnalyser(graph.analyser);
     return graph;
   } catch {
-    return existing ?? null;
+    if (existing && existing.ctx.state !== "closed") {
+      const fallbackGraph = tapAnalyser(existing);
+      storeGraph(audio, fallbackGraph);
+      setPlaybackAnalyser(fallbackGraph.analyser);
+      return fallbackGraph;
+    }
+    const analyser = tapCaptureStream(audio);
+    setPlaybackAnalyser(analyser);
+    return null;
   }
 }
 
@@ -148,6 +230,7 @@ export function AudioEngine() {
     if (!audio) return;
     const graph = connectEqGraph(audio);
     graphRef.current = graph;
+    setPlaybackAnalyser(graph?.analyser ?? null);
     if (!graph) return;
     audio.volume = 1;
     audio.muted = false;
@@ -203,6 +286,13 @@ export function AudioEngine() {
     if (!audio || !src) return;
     if (isPlaying) {
       void graphRef.current?.ctx.resume();
+      if (!graphRef.current) {
+        const analyser = tapCaptureStream(audio);
+        if (analyser) setPlaybackAnalyser(analyser);
+      } else {
+        const fallback = (audio as AudioWithGraph)[FALLBACK_KEY];
+        void fallback?.ctx.resume();
+      }
       void audio.play().catch(() => {
         setError("Playback was blocked. Press play to start audio.");
       });

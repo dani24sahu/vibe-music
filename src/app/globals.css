@@ -361,8 +361,19 @@
   animation-delay: -0.45s;
 }
 
-.play-glow {
-  animation: pulse-glow 2.2s ease-in-out infinite;
+@keyframes cue-breathe {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.25deg) scale(1);
+  }
+  50% {
+    transform: translateY(-7px) rotate(1.4deg) scale(1.018);
+  }
+}
+
+.cue-breathe {
+  transform-origin: center;
+  animation: cue-breathe 5.6s ease-in-out infinite;
 }
 
 @media (pointer: coarse) {
@@ -383,7 +394,8 @@
   .stagger-in > *,
   .mesh-bg span,
   .eq-bars i,
-  .play-glow {
+  .play-glow,
+  .cue-breathe {
     animation: none !important;
   }
 }
