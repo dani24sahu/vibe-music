@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.2.1";
+export const APP_VERSION = "0.3.0";
 export const LAST_SEEN_VERSION_KEY = "vibe-last-seen-version";
 
 export type WhatsNewRelease = {
@@ -11,6 +11,16 @@ export type WhatsNewRelease = {
 /** Newest first. Bump APP_VERSION and package.json together when adding a release. */
 
 export const WHATS_NEW: WhatsNewRelease[] = [
+  {
+    version: "0.3.0",
+    date: "20 Aug 2026",
+    title: "tune it, spin it, feel it",
+    highlights: [
+      "10-band EQ with presets — shape the sound from the player.",
+      "Tonight’s vibe picks a station from your likes and recents.",
+      "Now Playing gets cue-card artwork and a smooth wave seek bar.",
+    ],
+  },
   {
     version: "0.2.1",
     date: "17 Aug 2026",
